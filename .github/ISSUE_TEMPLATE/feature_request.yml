@@ -1,0 +1,125 @@
+name: 🚀 Feature Request
+description: Suggest an idea for this project
+title: '[Feature]: '
+labels:
+  - enhancement
+  - needs-triage
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a new feature! Please fill out this template to help us understand your request.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm you have completed the following
+      options:
+        - label: I have searched existing issues to avoid creating duplicates
+          required: true
+        - label: I have read the documentation to understand current capabilities
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description:
+        Is your feature request related to a problem? Please describe the issue you're trying to
+        solve
+      placeholder: I'm frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented
+      placeholder: I would like to see...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or features you've considered
+      placeholder: I also considered...
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature Type
+      description: What type of feature are you requesting?
+      options:
+        - New filter pattern syntax
+        - New output format
+        - New configuration option
+        - Performance improvement
+        - Documentation improvement
+        - Developer experience improvement
+        - Integration with other actions/tools
+        - Other (please specify in Additional Context)
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe your specific use case and how this feature would help
+      placeholder: |
+        In my workflow, I need to...
+        This would help me because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example Configuration
+      description: If applicable, provide an example of how you envision using this feature
+      render: yaml
+      placeholder: |
+        - uses: santosr2/conditional-paths-action@v3
+          with:
+            new-feature: value
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve my workflow
+        - High - Blocking my use case
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or examples about the feature request
+      placeholder: Any additional information that might be helpful...
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contributing
+      description: Are you willing to contribute to this feature?
+      options:
+        - label: I would be willing to implement this feature and submit a pull request
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

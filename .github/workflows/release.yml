@@ -1,0 +1,229 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  validate-tag:
+    name: Validate Release Tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      major-version: ${{ steps.version.outputs.major-version }}
+      is-prerelease: ${{ steps.version.outputs.is-prerelease }}
+    steps:
+      - name: Validate semver tag
+        id: version
+        run: |
+          tag="${{ github.ref_name }}"
+          if [[ ! "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-[a-zA-Z0-9.-]+)?$ ]]; then
+            echo "::error::Invalid semver tag format: $tag"
+            exit 1
+          fi
+
+          version="${tag#v}"
+          major_version="v${BASH_REMATCH[1]}"
+          is_prerelease="false"
+
+          if [[ -n "${BASH_REMATCH[4]}" ]]; then
+            is_prerelease="true"
+          fi
+
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "major-version=$major_version" >> $GITHUB_OUTPUT
+          echo "is-prerelease=$is_prerelease" >> $GITHUB_OUTPUT
+
+          echo "Tag: $tag"
+          echo "Version: $version"
+          echo "Major version: $major_version"
+          echo "Is prerelease: $is_prerelease"
+
+  build:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: validate-tag
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+
+      - name: Setup mise
+        uses: jdx/mise-action@f8dfbcc150159126838e44b882bf34bd98fd90f3 # v2.1.0
+        with:
+          install: true
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run full test suite
+        run: |
+          pnpm run check
+          pnpm run lint --max-warnings=0
+          pnpm run test:coverage
+
+      - name: Build and package
+        run: |
+          pnpm run build
+          pnpm run package
+
+      - name: Verify dist is clean
+        run: |
+          if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
+            echo "::error::Build produced uncommitted changes in dist/"
+            git diff --ignore-space-at-eol --text dist/
+            exit 1
+          fi
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: release-artifacts-${{ github.sha }}
+          path: |
+            dist/
+            lib/
+            *.md
+            LICENSE
+            package.json
+            action.yml
+          retention-days: 30
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate-tag, build]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: release-artifacts-${{ github.sha }}
+
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          # Generate changelog from git commits since last tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -2 | tail -1 || echo "")
+          CURRENT_TAG="${{ github.ref_name }}"
+
+          echo "## What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            echo "Changes since $PREVIOUS_TAG:" >> release_notes.md
+            echo "" >> release_notes.md
+
+            # Get commits between tags, format as changelog
+            git log "$PREVIOUS_TAG..$CURRENT_TAG" \
+              --pretty=format:"- %s @%an" \
+              --reverse \
+              --no-merges >> release_notes.md
+          else
+            echo "Initial release" >> release_notes.md
+          fi
+
+          echo "" >> release_notes.md
+          echo "## Usage" >> release_notes.md
+          echo "" >> release_notes.md
+          echo '```yaml' >> release_notes.md
+          echo "- uses: santosr2/conditional-paths-action@$CURRENT_TAG" >> release_notes.md
+          echo "  with:" >> release_notes.md
+          echo "    filters: |" >> release_notes.md
+          echo "      src:" >> release_notes.md
+          echo "        - 'src/**'" >> release_notes.md
+          echo '```' >> release_notes.md
+          echo "" >> release_notes.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...$CURRENT_TAG" >> release_notes.md
+
+          # Set output for release creation
+          {
+            echo 'notes<<EOF'
+            cat release_notes.md
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.release-notes.outputs.notes }}
+          draft: false
+          prerelease: ${{ needs.validate-tag.outputs.is-prerelease == 'true' }}
+          generate_release_notes: true
+          append_body: true
+
+  update-major-tag:
+    name: Update Major Version Tag
+    runs-on: ubuntu-latest
+    needs: [validate-tag, create-release]
+    if: needs.validate-tag.outputs.is-prerelease == 'false'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Update major version tag
+        run: |
+          major_tag="${{ needs.validate-tag.outputs.major-version }}"
+          current_tag="${{ github.ref_name }}"
+
+          echo "Updating $major_tag to point to $current_tag"
+
+          # Delete the major tag if it exists
+          git push origin --delete "$major_tag" || true
+
+          # Create new major tag pointing to current release
+          git tag -fa "$major_tag" -m "Update $major_tag to $current_tag"
+          git push origin "$major_tag"
+
+  integration-test:
+    name: Test Released Action
+    runs-on: ubuntu-latest
+    needs: [validate-tag, create-release]
+    steps:
+      - name: Checkout test repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          repository: actions/checkout
+          path: test-repo
+
+      - name: Test released action
+        uses: santosr2/conditional-paths-action@${{ github.ref_name }}
+        id: changes
+        with:
+          working-directory: test-repo
+          filters: |
+            workflow:
+              - '.github/**'
+            src:
+              - 'src/**'
+            docs:
+              - '*.md'
+
+      - name: Verify action works
+        run: |
+          echo "Testing completed successfully!"
+          echo "Workflow files changed: ${{ steps.changes.outputs.workflow }}"
+          echo "Source files changed: ${{ steps.changes.outputs.src }}"
+          echo "Docs changed: ${{ steps.changes.outputs.docs }}"

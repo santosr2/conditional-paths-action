@@ -1,0 +1,8 @@
+# Global code owners
+* @santosr2
+
+# Critical files require maintainer approval
+/.github/ @santosr2
+/action.yml @santosr2
+/package.json @santosr2
+/.mise.toml @santosr2

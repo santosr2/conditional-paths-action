@@ -1,0 +1,149 @@
+name: 🐛 Bug Report
+description: Create a report to help us improve
+title: '[Bug]: '
+labels:
+  - bug
+  - needs-triage
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug! Please fill out this template to help us investigate and resolve the issue quickly.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm you have completed the following
+      options:
+        - label: I have searched existing issues to avoid creating duplicates
+          required: true
+        - label: I have read the documentation and troubleshooting guide
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen
+      placeholder: Describe what should have happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: A clear and concise description of what actually happened
+      placeholder: Describe what actually happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Configure the action with...
+        2. Trigger workflow with...
+        3. Check the output...
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow Configuration
+      description: Please share your workflow file or the relevant part using the action
+      render: yaml
+      placeholder: |
+        - uses: santosr2/conditional-paths-action@v3
+          id: changes
+          with:
+            filters: |
+              src:
+                - 'src/**'
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Action Logs
+      description: Please include the relevant action logs from the GitHub workflow run
+      render: text
+      placeholder: Paste the action logs here...
+
+  - type: input
+    id: action-version
+    attributes:
+      label: Action Version
+      description: What version of the action are you using?
+      placeholder: v3.0.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runner
+    attributes:
+      label: Runner Environment
+      description: Which runner environment are you using?
+      options:
+        - ubuntu-latest
+        - ubuntu-20.04
+        - ubuntu-22.04
+        - windows-latest
+        - windows-2019
+        - windows-2022
+        - macos-latest
+        - macos-11
+        - macos-12
+        - macos-13
+        - self-hosted
+        - Other (please specify in Additional Context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: trigger
+    attributes:
+      label: Workflow Trigger
+      description: What event triggered your workflow?
+      options:
+        - pull_request
+        - pull_request_target
+        - push
+        - workflow_dispatch
+        - schedule
+        - repository_dispatch
+        - Other (please specify in Additional Context)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: Any additional information that might be helpful...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
