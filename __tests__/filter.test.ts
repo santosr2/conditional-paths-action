@@ -1,5 +1,6 @@
-import {Filter, FilterConfig, PredicateQuantifier} from '../src/filter'
-import {File, ChangeStatus} from '../src/file'
+import { describe, test, expect } from 'vitest'
+import { Filter, FilterConfig, PredicateQuantifier } from '../src/lib/filter.js'
+import { File, ChangeStatus } from '../src/file.js'
 
 describe('yaml filter parsing tests', () => {
   test('throws if yaml is not a dictionary', () => {
@@ -124,12 +125,21 @@ describe('matching tests', () => {
       - '!**/*.jpeg'
       - '!**/*.md'
     `
-    const filterConfig: FilterConfig = {predicateQuantifier: PredicateQuantifier.EVERY}
+    const filterConfig: FilterConfig = { predicateQuantifier: PredicateQuantifier.EVERY }
     const filter = new Filter(yaml, filterConfig)
 
-    const typescriptFiles = modified(['pkg/a/b/c/some-class.ts', 'pkg/a/b/c/src/main/some-class.ts'])
-    const otherPkgTypescriptFiles = modified(['pkg/x/y/z/some-class.ts', 'pkg/x/y/z/src/main/some-class.ts'])
-    const otherPkgJpegFiles = modified(['pkg/x/y/z/some-pic.jpeg', 'pkg/x/y/z/src/main/jpeg/some-pic.jpeg'])
+    const typescriptFiles = modified([
+      'pkg/a/b/c/some-class.ts',
+      'pkg/a/b/c/src/main/some-class.ts'
+    ])
+    const otherPkgTypescriptFiles = modified([
+      'pkg/x/y/z/some-class.ts',
+      'pkg/x/y/z/src/main/some-class.ts'
+    ])
+    const otherPkgJpegFiles = modified([
+      'pkg/x/y/z/some-pic.jpeg',
+      'pkg/x/y/z/src/main/jpeg/some-pic.jpeg'
+    ])
     const docsFiles = modified([
       'pkg/a/b/c/some-pics.jpeg',
       'pkg/a/b/c/src/main/jpeg/some-pic.jpeg',
@@ -181,7 +191,7 @@ describe('matching specific change status', () => {
       - added: "**/*"
     `
     let filter = new Filter(yaml)
-    const files = [{status: ChangeStatus.Added, filename: 'file.js'}]
+    const files = [{ status: ChangeStatus.Added, filename: 'file.js' }]
     const match = filter.match(files)
     expect(match.add).toEqual(files)
   })
@@ -192,7 +202,7 @@ describe('matching specific change status', () => {
       - added|modified: "**/*"
     `
     let filter = new Filter(yaml)
-    const files = [{status: ChangeStatus.Modified, filename: 'file.js'}]
+    const files = [{ status: ChangeStatus.Modified, filename: 'file.js' }]
     const match = filter.match(files)
     expect(match.addOrModify).toEqual(files)
   })
@@ -214,12 +224,12 @@ describe('matching specific change status', () => {
 
 function modified(paths: string[]): File[] {
   return paths.map(filename => {
-    return {filename, status: ChangeStatus.Modified}
+    return { filename, status: ChangeStatus.Modified }
   })
 }
 
 function renamed(paths: string[]): File[] {
   return paths.map(filename => {
-    return {filename, status: ChangeStatus.Renamed}
+    return { filename, status: ChangeStatus.Renamed }
   })
 }

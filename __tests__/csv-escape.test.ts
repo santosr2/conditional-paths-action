@@ -1,4 +1,5 @@
-import {csvEscape} from '../src/list-format/csv-escape'
+import { describe, test, expect } from 'vitest'
+import { csvEscape } from '../src/lib/list-format/csv-escape.js'
 
 describe('csvEscape() backslash escapes every character except subset of definitely safe characters', () => {
   test('simple filename should not be modified', () => {
