@@ -1,0 +1,21 @@
+# mise configuration for consistent toolchain management
+# https://mise.jdx.dev/
+
+[tools]
+# Node.js version matching engines field in package.json
+node = "24"
+# pnpm version matching packageManager field
+pnpm = "8.15.0"
+
+[env]
+# Ensure pnpm uses the specified version
+PNPM_VERSION = "8.15.0"
+
+[tasks]
+# Common development tasks
+dev = "pnpm install && pnpm run dev"
+build = "pnpm run build && pnpm run package"
+test = "pnpm run test"
+lint = "pnpm run lint"
+check = "pnpm run check"
+format = "pnpm run format"
