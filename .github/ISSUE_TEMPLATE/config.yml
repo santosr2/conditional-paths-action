@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/santosr2/conditional-paths-action#readme
+    about: Read the comprehensive documentation and examples
+  - name: 💬 GitHub Discussions
+    url: https://github.com/santosr2/conditional-paths-action/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 🔍 Search Existing Issues
+    url: https://github.com/santosr2/conditional-paths-action/issues?q=is%3Aissue
+    about: Search existing issues before creating a new one
