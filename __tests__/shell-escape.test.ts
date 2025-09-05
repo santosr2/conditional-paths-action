@@ -1,4 +1,5 @@
-import {backslashEscape, shellEscape} from '../src/list-format/shell-escape'
+import { describe, test, expect } from 'vitest'
+import { backslashEscape, shellEscape } from '../src/lib/list-format/shell-escape.js'
 
 describe('escape() backslash escapes every character except subset of definitely safe characters', () => {
   test('simple filename should not be modified', () => {
