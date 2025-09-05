@@ -1,567 +1,406 @@
-# Paths Changes Filter
+# Conditional Paths Action
 
-[GitHub Action](https://github.com/features/actions) that enables conditional execution of workflow steps and jobs, based on the files modified by pull request, on a feature
-branch, or by the recently pushed commits.
+[![GitHub release](https://img.shields.io/github/v/release/santosr2/conditional-paths-action?display_name=tag&sort=semver)](https://github.com/santosr2/conditional-paths-action/releases)
+[![CI](https://github.com/santosr2/conditional-paths-action/actions/workflows/ci.yml/badge.svg)](https://github.com/santosr2/conditional-paths-action/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/santosr2/conditional-paths-action/actions/workflows/codeql.yml/badge.svg)](https://github.com/santosr2/conditional-paths-action/actions/workflows/codeql.yml)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Paths%20Changes%20Filter-blue?logo=github)](https://github.com/marketplace/actions/paths-changes-filter)
 
-Run slow tasks like integration tests or deployments only for changed components. It saves time and resources, especially in monorepo setups.
-GitHub workflows built-in [path filters](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths)
-don't allow this because they don't work on a level of individual jobs or steps.
+> [!NOTE]
+> This project is forked from [paths-filer](https://github.com/dorny/paths-filter) - [Commit](https://github.com/dorny/paths-filter/commit/de90cc6fb38fc0963ad72b210f1f284cd68cea36)
+> Appreciate Dorny and contributors for the wonderful work
 
-**Real world usage examples:**
+A powerful [GitHub Action](https://github.com/features/actions) that enables conditional execution of workflow steps and jobs based on the files modified by pull requests, feature branches, or recent commits.
 
-- [sentry.io](https://sentry.io/) - [backend.yml](https://github.com/getsentry/sentry/blob/2ebe01feab863d89aa7564e6d243b6d80c230ddc/.github/workflows/backend.yml#L36)
-- [GoogleChrome/web.dev](https://web.dev/) - [lint-workflow.yml](https://github.com/GoogleChrome/web.dev/blob/3a57b721e7df6fc52172f676ca68d16153bda6a3/.github/workflows/lint-workflow.yml#L26)
-- [blog post Configuring python linting to be part of CI/CD using GitHub actions](https://dev.to/freshbooks/configuring-python-linting-to-be-part-of-cicd-using-github-actions-1731#what-files-does-it-run-against) - [py_linter.yml](https://github.com/iamtodor/demo-github-actions-python-linter-configuration/blob/main/.github/workflows/py_linter.yml#L31)
+**⚡ Why Use This Action?**
 
-## Supported workflows
+- **Save Time & Resources**: Run slow tasks like integration tests or deployments only for changed components
+- **Perfect for Monorepos**: Ideal for multi-package repositories where you only want to build/test affected packages
+- **Flexible Detection**: Works with pull requests, feature branches, and long-lived branches
+- **Rich Output Formats**: Get file lists in JSON, CSV, shell, or escaped formats
+- **Advanced Filtering**: Support for glob patterns, change types (added/modified/deleted), and predicate quantifiers
 
-- **Pull requests:**
-  - Workflow triggered by **[pull_request](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request)**
-    or **[pull_request_target](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request_target)** event
-  - Changes are detected against the pull request base branch
-  - Uses GitHub REST API to fetch a list of modified files
-  - Requires [pull-requests: read](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs) permission
-- **Feature branches:**
-  - Workflow triggered by **[push](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#push)**
-  or any other **[event](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows)**
-  - The `base` input parameter must not be the same as the branch that triggered the workflow
-  - Changes are detected against the merge-base with the configured base branch or the default branch
-  - Uses git commands to detect changes - repository must be already [checked out](https://github.com/actions/checkout)
-- **Master, Release, or other long-lived branches:**
-  - Workflow triggered by **[push](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#push)** event
-  when `base` input parameter is the same as the branch that triggered the workflow:
-    - Changes are detected against the most recent commit on the same branch before the push
-  - Workflow triggered by any other **[event](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows)**
-  when `base` input parameter is commit SHA:
-    - Changes are detected against the provided `base` commit
-  - Workflow triggered by any other **[event](https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows)**
-  when `base` input parameter is the same as the branch that triggered the workflow:
-    - Changes are detected from the last commit
-  - Uses git commands to detect changes - repository must be already [checked out](https://github.com/actions/checkout)
-- **Local changes**
-  - Workflow triggered by any event when `base` input parameter is set to `HEAD`
-  - Changes are detected against the current HEAD
-  - Untracked files are ignored
+> **Note**: GitHub's built-in [path filters](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpaths) don't work at the job or step level, making this action essential for conditional workflow execution.
 
-## Example
+## 🚀 Quick Start
 
 ```yaml
-- uses: dorny/paths-filter@v3
+- uses: santosr2/conditional-paths-action@v3
   id: changes
   with:
     filters: |
       src:
         - 'src/**'
+      docs:
+        - 'docs/**'
+        - '*.md'
 
-  # run only if some file in 'src' folder was changed
-- if: steps.changes.outputs.src == 'true'
-  run: ...
+# Run only if source code changed
+- name: Build and Test
+  if: steps.changes.outputs.src == 'true'
+  run: npm run build && npm test
+
+# Run only if documentation changed
+- name: Deploy Docs
+  if: steps.changes.outputs.docs == 'true'
+  run: npm run deploy:docs
 ```
 
-For more scenarios see [examples](#examples) section.
+## 📋 Inputs
 
-## Notes
+| Name | Description | Required | Default |
+|------|-------------|----------|---------|
+| `filters` | Path to YAML file or inline YAML string defining path filters | ✅ Yes | |
+| `token` | GitHub token for API access (pull requests only) | ❌ No | `${{ github.token }}` |
+| `base` | Git reference to compare against | ❌ No | Repository default branch |
+| `ref` | Git reference to detect changes from | ❌ No | `${{ github.ref }}` |
+| `working-directory` | Relative path where repository was checked out | ❌ No | |
+| `list-files` | Output format for matched files: `none`, `csv`, `json`, `shell`, `escape` | ❌ No | `none` |
+| `initial-fetch-depth` | Initial number of commits to fetch for comparison | ❌ No | `100` |
+| `predicate-quantifier` | Pattern matching mode: `some` (OR) or `every` (AND) | ❌ No | `some` |
 
-- Paths expressions are evaluated using [picomatch](https://github.com/micromatch/picomatch) library.
-  Documentation for path expression format can be found on the project GitHub page.
-- Picomatch [dot](https://github.com/micromatch/picomatch#options) option is set to true.
-  Globbing will also match paths where file or folder name starts with a dot.
-- It's recommended to quote your path expressions with `'` or `"`. Otherwise, you will get an error if it starts with `*`.
-- Local execution with [act](https://github.com/nektos/act) works only with alternative runner image. Default runner doesn't have `git` binary.
-  - Use: `act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04`
+## 📤 Outputs
 
-## What's New
+For each filter named `{filter-name}`, the action provides:
 
-- New major release `v3` after update to Node 20 [Breaking change]
-- Add `ref` input parameter
-- Add `list-files: csv` format
-- Configure matrix job to run for each folder with changes using `changes` output
-- Improved listing of matching files with `list-files: shell` and `list-files: escape` options
-- Paths expressions are now evaluated using [picomatch](https://github.com/micromatch/picomatch) library
+| Output | Type | Description |
+|--------|------|-------------|
+| `{filter-name}` | `string` | `'true'` if any files match the filter, `'false'` otherwise |
+| `{filter-name}_count` | `number` | Count of files matching the filter |
+| `{filter-name}_files` | `string` | List of matching files (when `list-files` is enabled) |
+| `changes` | `string` | JSON array of all filter names with matches |
 
-For more information, see [CHANGELOG](https://github.com/dorny/paths-filter/blob/master/CHANGELOG.md)
+## 🎯 Supported Workflows
 
-## Usage
+### Pull Requests
 
-```yaml
-- uses: dorny/paths-filter@v3
-  with:
-    # Defines filters applied to detected changed files.
-    # Each filter has a name and a list of rules.
-    # Rule is a glob expression - paths of all changed
-    # files are matched against it.
-    # Rule can optionally specify if the file
-    # should be added, modified, or deleted.
-    # For each filter, there will be a corresponding output variable to
-    # indicate if there's a changed file matching any of the rules.
-    # Optionally, there can be a second output variable
-    # set to list of all files matching the filter.
-    # Filters can be provided inline as a string (containing valid YAML document),
-    # or as a relative path to a file (e.g.: .github/filters.yaml).
-    # Filters syntax is documented by example - see examples section.
-    filters: ''
+- **Triggers**: `pull_request`, `pull_request_target`
+- **Detection**: Against PR base branch using GitHub API
+- **Permissions**: Requires `pull-requests: read`
+- **Advantage**: Fast, no need to checkout code
 
-    # Branch, tag, or commit SHA against which the changes will be detected.
-    # If it references the same branch it was pushed to,
-    # changes are detected against the most recent commit before the push.
-    # Otherwise, it uses git merge-base to find the best common ancestor between
-    # current branch (HEAD) and base.
-    # When merge-base is found, it's used for change detection - only changes
-    # introduced by the current branch are considered.
-    # All files are considered as added if there is no common ancestor with
-    # base branch or no previous commit.
-    # This option is ignored if action is triggered by pull_request event.
-    # Default: repository default branch (e.g. master)
-    base: ''
+### Feature Branches
 
-    # Git reference (e.g. branch name) from which the changes will be detected.
-    # Useful when workflow can be triggered only on the default branch (e.g. repository_dispatch event)
-    # but you want to get changes on a different branch.
-    # This option is ignored if action is triggered by pull_request event.
-    # default: ${{ github.ref }}
-    ref:
+- **Triggers**: `push` or any event
+- **Detection**: Against merge-base with specified base branch
+- **Requirements**: Repository must be checked out
+- **Use Case**: Feature branch workflows
 
-    # How many commits are initially fetched from the base branch.
-    # If needed, each subsequent fetch doubles the
-    # previously requested number of commits until the merge-base
-    # is found, or there are no more commits in the history.
-    # This option takes effect only when changes are detected
-    # using git against base branch (feature branch workflow).
-    # Default: 100
-    initial-fetch-depth: ''
+### Long-lived Branches
 
-    # Enables listing of files matching the filter:
-    #   'none'  - Disables listing of matching files (default).
-    #   'csv'   - Coma separated list of filenames.
-    #             If needed, it uses double quotes to wrap filename with unsafe characters.
-    #   'json'  - File paths are formatted as JSON array.
-    #   'shell' - Space delimited list usable as command-line argument list in Linux shell.
-    #             If needed, it uses single or double quotes to wrap filename with unsafe characters.
-    #   'escape'- Space delimited list usable as command-line argument list in Linux shell.
-    #             Backslash escapes every potentially unsafe character.
-    # Default: none
-    list-files: ''
+- **Triggers**: `push` to master/main/develop
+- **Detection**: Against previous commit on same branch
+- **Use Case**: Continuous integration on main branches
 
-    # Relative path under $GITHUB_WORKSPACE where the repository was checked out.
-    working-directory: ''
+### Local Changes
 
-    # Personal access token used to fetch a list of changed files
-    # from GitHub REST API.
-    # It's only used if action is triggered by a pull request event.
-    # GitHub token from workflow context is used as default value.
-    # If an empty string is provided, the action falls back to detect
-    # changes using git commands.
-    # Default: ${{ github.token }}
-    token: ''
+- **Trigger**: Any event with `base: HEAD`
+- **Detection**: Staged and unstaged local changes
+- **Use Case**: Pre-commit checks, code formatting
 
-    # Optional parameter to override the default behavior of file matching algorithm. 
-    # By default files that match at least one pattern defined by the filters will be included.
-    # This parameter allows to override the "at least one pattern" behavior to make it so that
-    # all of the patterns have to match or otherwise the file is excluded. 
-    # An example scenario where this is useful if you would like to match all 
-    # .ts files in a sub-directory but not .md files. 
-    # The filters below will match markdown files despite the exclusion syntax UNLESS 
-    # you specify 'every' as the predicate-quantifier parameter. When you do that, 
-    # it will only match the .ts files in the subdirectory as expected.
-    #
-    # backend:
-    #  - 'pkg/a/b/c/**'
-    #  - '!**/*.jpeg'
-    #  - '!**/*.md'
-    predicate-quantifier: 'some'
-```
+## 📖 Examples
 
-## Outputs
-
-- For each filter, it sets output variable named by the filter to the text:
-  - `'true'` - if **any** of changed files matches any of filter rules
-  - `'false'` - if **none** of changed files matches any of filter rules
-- For each filter, it sets an output variable with the name `${FILTER_NAME}_count` to the count of matching files.
-- If enabled, for each filter it sets an output variable with the name `${FILTER_NAME}_files`. It will contain a list of all files matching the filter.
-- `changes` - JSON array with names of all filters matching any of the changed files.
-
-## Examples
-
-### Conditional execution
-
-<details>
-  <summary>Execute <b>step</b> in a workflow job only if some file in a subfolder is changed</summary>
+### Conditional Job Execution
 
 ```yaml
 jobs:
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: |
-          backend:
-            - 'backend/**'
-          frontend:
-            - 'frontend/**'
-
-    # run only if 'backend' files were changed
-    - name: backend tests
-      if: steps.filter.outputs.backend == 'true'
-      run: ...
-
-    # run only if 'frontend' files were changed
-    - name: frontend tests
-      if: steps.filter.outputs.frontend == 'true'
-      run: ...
-
-    # run if 'backend' or 'frontend' files were changed
-    - name: e2e tests
-      if: steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
-      run: ...
-```
-
-</details>
-
-<details>
-  <summary>Execute <b>job</b> in a workflow only if some file in a subfolder is changed</summary>
-
-```yml
-jobs:
-  # JOB to run change detection
   changes:
     runs-on: ubuntu-latest
-    # Required permissions
     permissions:
       pull-requests: read
-    # Set job outputs to values from filter step
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-    # For pull requests it's not necessary to checkout the code
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: |
-          backend:
-            - 'backend/**'
-          frontend:
-            - 'frontend/**'
+      - uses: santosr2/conditional-paths-action@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'api/**'
+              - 'services/**'
+            frontend:
+              - 'web/**'
+              - 'components/**'
 
-  # JOB to build and test backend code
-  backend:
+  backend-tests:
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - ...
+      - name: Run Backend Tests
+        run: npm run test:backend
 
-  # JOB to build and test frontend code
-  frontend:
+  frontend-tests:
     needs: changes
     if: ${{ needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - ...
+      - name: Run Frontend Tests
+        run: npm run test:frontend
 ```
 
-</details>
-
-<details>
-<summary>Use change detection to configure matrix job</summary>
+### Matrix Jobs for Monorepos
 
 ```yaml
 jobs:
-  # JOB to run change detection
   changes:
     runs-on: ubuntu-latest
-    # Required permissions
     permissions:
       pull-requests: read
     outputs:
-      # Expose matched filters as job 'packages' output variable
       packages: ${{ steps.filter.outputs.changes }}
     steps:
-    # For pull requests it's not necessary to checkout the code
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: |
-          package1: src/package1
-          package2: src/package2
+      - uses: santosr2/conditional-paths-action@v3
+        id: filter
+        with:
+          filters: |
+            package-a: 'packages/a/**'
+            package-b: 'packages/b/**'
+            package-c: 'packages/c/**'
 
-  # JOB to build and test each of modified packages
   build:
     needs: changes
+    if: ${{ needs.changes.outputs.packages != '[]' }}
     strategy:
       matrix:
-        # Parse JSON array containing names of all filters matching any of changed files
-        # e.g. ['package1', 'package2'] if both package folders contains changes
         package: ${{ fromJSON(needs.changes.outputs.packages) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - ...
+      - name: Build ${{ matrix.package }}
+        run: npm run build --workspace=${{ matrix.package }}
 ```
 
-</details>
-
-### Change detection workflows
-
-<details>
-  <summary><b>Pull requests:</b> Detect changes against PR base branch</summary>
+### Advanced File Processing
 
 ```yaml
-on:
-  pull_request:
-    branches: # PRs to the following branches will trigger the workflow
-      - master
-      - develop
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    # Required permissions
-    permissions:
-      pull-requests: read
-    steps:
-    - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: ... # Configure your filters
-```
-
-</details>
-
-<details>
-  <summary><b>Feature branch:</b> Detect changes against configured base branch</summary>
-
-```yaml
-on:
-  push:
-    branches: # Push to following branches will trigger the workflow
-      - feature/**
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        # This may save additional git fetch roundtrip if
-        # merge-base is found within latest 20 commits
-        fetch-depth: 20
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        base: develop # Change detection against merge-base with this branch
-        filters: ... # Configure your filters
-```
-
-</details>
-
-<details>
-  <summary><b>Long lived branches:</b> Detect changes against the most recent commit on the same branch before the push</summary>
-
-```yaml
-on:
-  push:
-    branches: # Push to the following branches will trigger the workflow
-      - master
-      - develop
-      - release/**
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        # Use context to get the branch where commits were pushed.
-        # If there is only one long-lived branch (e.g. master),
-        # you can specify it directly.
-        # If it's not configured, the repository default branch is used.
-        base: ${{ github.ref }}
-        filters: ... # Configure your filters
-```
-
-</details>
-
-<details>
-  <summary><b>Local changes:</b> Detect staged and unstaged local changes</summary>
-
-```yaml
-on:
-  push:
-    branches: # Push to following branches will trigger the workflow
-      - master
-      - develop
-      - release/**
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-      # Some action that modifies files tracked by git (e.g. code linter)
-    - uses: johndoe/some-action@v1
-
-      # Filter to detect which files were modified
-      # Changes could be, for example, automatically committed
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        base: HEAD
-        filters: ... # Configure your filters
-```
-
-</details>
-
-### Advanced options
-
-<details>
-  <summary>Define filter rules in own file</summary>
-
-```yaml
-- uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        # Path to file where filters are defined
-        filters: .github/filters.yaml
-```
-
-</details>
-
-<details>
-  <summary>Use YAML anchors to reuse path expression(s) inside another rule</summary>
-
-```yaml
-- uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        # &shared is YAML anchor,
-        # *shared references previously defined anchor
-        # src filter will match any path under common, config and src folders
-        filters: |
-          shared: &shared
-            - common/**
-            - config/**
-          src:
-            - *shared
-            - src/**
-```
-
-</details>
-
-<details>
-  <summary>Consider if file was added, modified or deleted</summary>
-
-```yaml
-- uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        # Changed file can be 'added', 'modified', or 'deleted'.
-        # By default, the type of change is not considered.
-        # Optionally, it's possible to specify it using nested
-        # dictionary, where the type of change composes the key.
-        # Multiple change types can be specified using `|` as the delimiter.
-        filters: |
-          shared: &shared
-            - common/**
-            - config/**
-          addedOrModified:
-            - added|modified: '**'
-          allChanges:
-            - added|deleted|modified: '**'
-          addedOrModifiedAnchors:
-            - added|modified: *shared
-```
-
-</details>
-
-<details>
-  <summary>Detect changes in folder only for some file extensions</summary>
-
-```yaml
-- uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        # This makes it so that all the patterns have to match a file for it to be
-        # considered changed. Because we have the exclusions for .jpeg and .md files
-        # the end result is that if those files are changed they will be ignored
-        # because they don't match the respective rules excluding them.
-        #
-        # This can be leveraged to ensure that you only build & test software changes
-        # that have real impact on the behavior of the code, e.g. you can set up your
-        # build to run when Typescript/Rust/etc. files are changed but markdown
-        # changes in the diff will be ignored and you consume less resources to build.
-        predicate-quantifier: 'every'
-        filters: |
-          backend:
-            - 'pkg/a/b/c/**'
-            - '!**/*.jpeg'
-            - '!**/*.md'
-```
-
-</details>
-
-### Custom processing of changed files
-
-<details>
-  <summary>Passing list of modified files as command line args in Linux shell</summary>
-
-```yaml
-- uses: dorny/paths-filter@v3
+- uses: santosr2/conditional-paths-action@v3
   id: filter
   with:
-    # Enable listing of files matching each filter.
-    # Paths to files will be available in `${FILTER_NAME}_files` output variable.
-    # Paths will be escaped and space-delimited.
-    # Output is usable as command-line argument list in Linux shell
-    list-files: shell
-
-    # In this example changed files will be checked by linter.
-    # It doesn't make sense to lint deleted files.
-    # Therefore we specify we are only interested in added or modified files.
-    filters: |
-      markdown:
-        - added|modified: '*.md'
-- name: Lint Markdown
-  if: ${{ steps.filter.outputs.markdown == 'true' }}
-  run: npx textlint ${{ steps.filter.outputs.markdown_files }}
-```
-
-</details>
-
-<details>
-  <summary>Passing list of modified files as JSON array to another action</summary>
-
-```yaml
-- uses: dorny/paths-filter@v3
-  id: filter
-  with:
-    # Enable listing of files matching each filter.
-    # Paths to files will be available in `${FILTER_NAME}_files` output variable.
-    # Paths will be formatted as JSON array
     list-files: json
-
-    # In this example all changed files are passed to the following action to do
-    # some custom processing.
     filters: |
-      changed:
-        - '**'
-- name: Lint Markdown
-  uses: johndoe/some-action@v1
-  with:
-    files: ${{ steps.filter.outputs.changed_files }}
+      typescript:
+        - added|modified: '**/*.{ts,tsx}'
+      docs:
+        - added|modified: '**/*.md'
+
+- name: Type Check Changed Files
+  if: steps.filter.outputs.typescript == 'true'
+  run: |
+    files=$(echo '${{ steps.filter.outputs.typescript_files }}' | jq -r '.[]')
+    npx tsc --noEmit $files
+
+- name: Lint Documentation
+  if: steps.filter.outputs.docs == 'true'
+  run: npx markdownlint ${{ steps.filter.outputs.docs_files }}
 ```
 
-</details>
+### Pattern Matching Modes
 
-## See also
+```yaml
+- uses: santosr2/conditional-paths-action@v3
+  with:
+    # Use 'every' mode to require ALL patterns to match
+    predicate-quantifier: 'every'
+    filters: |
+      source-only:
+        - 'src/**'           # Must be in src/
+        - '!**/*.md'         # Must NOT be markdown
+        - '!**/*.json'       # Must NOT be JSON
+```
 
-- [test-reporter](https://github.com/dorny/test-reporter) - Displays test results from popular testing frameworks directly in GitHub
+## 🔧 Filter Syntax
 
-## License
+### Basic Patterns
 
-The scripts and documentation in this project are released under the [MIT License](https://github.com/dorny/paths-filter/blob/master/LICENSE)
+```yaml
+filters: |
+  frontend:
+    - 'src/web/**'
+    - 'components/**'
+  backend:
+    - 'api/**'
+    - 'services/**'
+```
+
+### Change Type Detection
+
+```yaml
+filters: |
+  new-files:
+    - added: '**'
+  modified-source:
+    - modified: 'src/**'
+  removed-tests:
+    - deleted: '**/*.test.js'
+  source-changes:
+    - added|modified: 'src/**'
+```
+
+### External Filter Files
+
+```yaml
+- uses: santosr2/conditional-paths-action@v3
+  with:
+    filters: .github/filters.yml
+```
+
+### YAML Anchors for Reusability
+
+```yaml
+- uses: santosr2/conditional-paths-action@v3
+  with:
+    filters: |
+      shared: &shared
+        - 'lib/**'
+        - 'utils/**'
+      frontend:
+        - *shared
+        - 'web/**'
+      backend:
+        - *shared
+        - 'api/**'
+```
+
+## 🏢 Real-World Usage
+
+This action is trusted by major projects:
+
+- **[Sentry](https://sentry.io/)** - [backend.yml](https://github.com/getsentry/sentry/blob/main/.github/workflows/backend.yml)
+- **[GoogleChrome/web.dev](https://web.dev/)** - [lint-workflow.yml](https://github.com/GoogleChrome/web.dev/blob/main/.github/workflows/lint-workflow.yml)
+- **[FreshBooks](https://freshbooks.com)** - [Python CI/CD Pipeline](https://dev.to/freshbooks/configuring-python-linting-to-be-part-of-cicd-using-github-actions-1731)
+
+## ⚠️ Important Notes
+
+- **Path Expressions**: Uses [picomatch](https://github.com/micromatch/picomatch) library with `dot: true` option
+- **Quoting**: Always quote patterns that start with `*` (e.g., `'*.js'`)
+- **Local Execution**: Use `act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04` for local testing
+- **Performance**: For pull requests, the action uses GitHub API for faster execution
+
+## 🆕 What's New in v3
+
+- ✅ **Node 20 Runtime** - Updated to latest GitHub Actions runtime
+- ✅ **`predicate-quantifier`** - Choose between `some` (OR) and `every` (AND) matching
+- ✅ **Enhanced File Lists** - New `csv` format and improved `shell`/`escape` formats
+- ✅ **Better Matrix Support** - Improved `changes` output for dynamic matrix jobs
+- ✅ **Picomatch Engine** - More powerful and consistent glob matching
+
+For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
+
+## 📚 API Reference
+
+### Filter Configuration
+
+Filters can be defined inline or in external files:
+
+```yaml
+# Inline YAML
+filters: |
+  docs: '**/*.md'
+  src: 'src/**'
+
+# External file
+filters: .github/filters.yml
+```
+
+### Advanced Options
+
+| Pattern Type | Example | Description |
+|--------------|---------|-------------|
+| **Basic Glob** | `src/**` | All files in src directory |
+| **Extensions** | `**/*.{ts,js}` | TypeScript and JavaScript files |
+| **Negation** | `!**/*.test.js` | Exclude test files |
+| **Change Type** | `added\|modified: src/**` | Only added/modified files in src |
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Setup
+
+This project uses [mise](https://mise.jdx.dev/) to manage toolchain versions for consistent development and CI environments.
+
+```bash
+# Clone the repository
+git clone https://github.com/santosr2/conditional-paths-action.git
+cd conditional-paths-action
+
+# Install development toolchain (Node.js, pnpm)
+mise install
+
+# Install dependencies
+pnpm install
+
+# Run tests
+pnpm test
+
+# Build and package the action
+pnpm build && pnpm package
+
+# Run all checks (type checking, linting, tests)
+pnpm run check && pnpm run lint && pnpm test
+```
+
+**Available Commands:**
+
+- `pnpm run build` - Compile TypeScript to JavaScript
+- `pnpm run package` - Bundle the action for distribution
+- `pnpm run check` - Type check with TypeScript
+- `pnpm run lint` - Lint code with ESLint
+- `pnpm run format` - Format code with Prettier
+- `pnpm run test` - Run unit tests with Jest
+- `pnpm run test:coverage` - Run tests with coverage report
+
+**CI/CD:**
+The project uses modern GitHub Actions with mise integration for consistent toolchain management across all environments. All third-party actions are pinned by commit SHA for supply chain security.
+
+### Release Process
+
+**How to cut a release:**
+
+```bash
+# Create and push a semver tag
+git tag v3.1.0
+git push origin v3.1.0
+
+# The release workflow will automatically:
+# - Validate the semver format
+# - Run full test suite and build
+# - Create GitHub release with changelog
+# - Update major version tag (v3)
+```
+
+**How to set up locally with mise:**
+
+```bash
+git clone https://github.com/santosr2/conditional-paths-action.git
+cd conditional-paths-action
+mise install    # Installs Node 20 and pnpm 8.15.0
+pnpm install     # Install dependencies
+```
+
+### Security & Maintenance
+
+**SHA-pinning Update Strategy:**
+Third-party GitHub Actions are pinned by commit SHA for security. To update:
+
+1. Check for new releases on the action's repository
+2. Update the SHA and version comment in workflow files
+3. Test the workflow before merging
+
+**Dependency Updates:**
+Dependabot automatically creates PRs for dependency updates with grouped PRs for related changes (dev dependencies, production dependencies, and type definitions).
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## 🔗 Related Actions
+
+- [test-reporter](https://github.com/dorny/test-reporter) - Display test results directly in GitHub
+
+---
+
+⭐ **Found this action helpful?** Give it a star and share it with your team!
