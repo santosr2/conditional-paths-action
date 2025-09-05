@@ -5,11 +5,11 @@
 # Node.js version matching engines field in package.json
 node = "24"
 # pnpm version matching packageManager field
-pnpm = "8.15.0"
+pnpm = "10"
 
 [env]
 # Ensure pnpm uses the specified version
-PNPM_VERSION = "8.15.0"
+PNPM_VERSION = "10"
 
 [tasks]
 # Common development tasks

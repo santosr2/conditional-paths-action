@@ -1,5 +1,7 @@
 # Changelog
 
+## Changelog from fork
+
 ## v3.0.2
 - [Add config parameter for predicate quantifier](https://github.com/dorny/paths-filter/pull/224)
 

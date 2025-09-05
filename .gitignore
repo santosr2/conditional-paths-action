@@ -5,6 +5,7 @@ pnpm-store/
 # Build outputs
 lib/
 !src/lib
+!dist/lib
 coverage/
 
 # Note: dist/ must be committed for GitHub Actions to work
