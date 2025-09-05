@@ -49,7 +49,7 @@ body:
       description: If applicable, share your current workflow configuration
       render: yaml
       placeholder: |
-        - uses: santosr2/conditional-paths-action@v3
+        - uses: santosr2/conditional-paths-action@v1
           with:
             filters: |
               # your current configuration

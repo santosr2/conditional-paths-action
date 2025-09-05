@@ -69,7 +69,7 @@ body:
       description: Please share your workflow file or the relevant part using the action
       render: yaml
       placeholder: |
-        - uses: santosr2/conditional-paths-action@v3
+        - uses: santosr2/conditional-paths-action@v1
           id: changes
           with:
             filters: |
@@ -91,7 +91,7 @@ body:
     attributes:
       label: Action Version
       description: What version of the action are you using?
-      placeholder: v3.0.2
+      placeholder: v1.0.0
     validations:
       required: true
 

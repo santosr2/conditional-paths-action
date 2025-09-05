@@ -10,7 +10,7 @@
 import * as fs from 'fs'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { GetResponseDataTypeFromEndpointMethod } from '@octokit/types'
+// Define interface for GitHub API file object
 import { PushEvent, PullRequestEvent } from '@octokit/webhooks-types'
 
 import {
@@ -28,6 +28,13 @@ import { csvEscape } from './list-format/csv-escape.js'
 
 /** Supported output formats for file lists */
 type ExportFormat = 'none' | 'csv' | 'json' | 'shell' | 'escape'
+
+/** Interface for GitHub API file object from pull request files endpoint */
+interface GitHubApiFile {
+  filename: string
+  status: string
+  previous_filename?: string
+}
 
 /**
  * Main entry point for the paths filter action.
@@ -302,9 +309,7 @@ async function getChangedFilesFromApi(
       }
       core.info(`Received ${response.data.length} items`)
 
-      for (const row of response.data as GetResponseDataTypeFromEndpointMethod<
-        typeof client.rest.pulls.listFiles
-      >) {
+      for (const row of response.data as GitHubApiFile[]) {
         core.info(`[${row.status}] ${row.filename}`)
 
         // Handle file renames by splitting them into separate add/delete operations
@@ -316,7 +321,7 @@ async function getChangedFilesFromApi(
           })
           files.push({
             // GitHub API includes previous_filename for renamed files
-            filename: (row as unknown as { previous_filename?: string }).previous_filename ?? '',
+            filename: row.previous_filename ?? '',
             status: ChangeStatus.Deleted
           })
         } else {

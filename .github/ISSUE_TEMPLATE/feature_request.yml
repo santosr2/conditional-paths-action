@@ -84,7 +84,7 @@ body:
       description: If applicable, provide an example of how you envision using this feature
       render: yaml
       placeholder: |
-        - uses: santosr2/conditional-paths-action@v3
+        - uses: santosr2/conditional-paths-action@v1
           with:
             new-feature: value
 

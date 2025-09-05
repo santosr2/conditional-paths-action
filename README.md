@@ -3,7 +3,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/santosr2/conditional-paths-action?display_name=tag&sort=semver)](https://github.com/santosr2/conditional-paths-action/releases)
 [![CI](https://github.com/santosr2/conditional-paths-action/actions/workflows/ci.yml/badge.svg)](https://github.com/santosr2/conditional-paths-action/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/santosr2/conditional-paths-action/actions/workflows/codeql.yml/badge.svg)](https://github.com/santosr2/conditional-paths-action/actions/workflows/codeql.yml)
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Paths%20Changes%20Filter-blue?logo=github)](https://github.com/marketplace/actions/paths-changes-filter)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Paths%20Changes%20Filter-blue?logo=github)](https://github.com/marketplace/actions/conditional-paths-action)
 
 > [!NOTE]
 > This project is forked from [paths-filer](https://github.com/dorny/paths-filter) - [Commit](https://github.com/dorny/paths-filter/commit/de90cc6fb38fc0963ad72b210f1f284cd68cea36)
@@ -24,7 +24,7 @@ A powerful [GitHub Action](https://github.com/features/actions) that enables con
 ## 🚀 Quick Start
 
 ```yaml
-- uses: santosr2/conditional-paths-action@v3
+- uses: santosr2/conditional-paths-action@v1
   id: changes
   with:
     filters: |
@@ -87,7 +87,7 @@ For each filter named `{filter-name}`, the action provides:
 
 ### Long-lived Branches
 
-- **Triggers**: `push` to master/main/develop
+- **Triggers**: `push` to main/develop
 - **Detection**: Against previous commit on same branch
 - **Use Case**: Continuous integration on main branches
 
@@ -111,7 +111,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-      - uses: santosr2/conditional-paths-action@v3
+      - uses: santosr2/conditional-paths-action@v1
         id: filter
         with:
           filters: |
@@ -152,7 +152,7 @@ jobs:
     outputs:
       packages: ${{ steps.filter.outputs.changes }}
     steps:
-      - uses: santosr2/conditional-paths-action@v3
+      - uses: santosr2/conditional-paths-action@v1
         id: filter
         with:
           filters: |
@@ -176,7 +176,7 @@ jobs:
 ### Advanced File Processing
 
 ```yaml
-- uses: santosr2/conditional-paths-action@v3
+- uses: santosr2/conditional-paths-action@v1
   id: filter
   with:
     list-files: json
@@ -200,7 +200,7 @@ jobs:
 ### Pattern Matching Modes
 
 ```yaml
-- uses: santosr2/conditional-paths-action@v3
+- uses: santosr2/conditional-paths-action@v1
   with:
     # Use 'every' mode to require ALL patterns to match
     predicate-quantifier: 'every'
@@ -242,7 +242,7 @@ filters: |
 ### External Filter Files
 
 ```yaml
-- uses: santosr2/conditional-paths-action@v3
+- uses: santosr2/conditional-paths-action@v1
   with:
     filters: .github/filters.yml
 ```
@@ -250,7 +250,7 @@ filters: |
 ### YAML Anchors for Reusability
 
 ```yaml
-- uses: santosr2/conditional-paths-action@v3
+- uses: santosr2/conditional-paths-action@v1
   with:
     filters: |
       shared: &shared
@@ -279,7 +279,7 @@ This action is trusted by major projects:
 - **Local Execution**: Use `act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04` for local testing
 - **Performance**: For pull requests, the action uses GitHub API for faster execution
 
-## 🆕 What's New in v3
+## 🆕 What's New in v1
 
 - ✅ **Node 20 Runtime** - Updated to latest GitHub Actions runtime
 - ✅ **`predicate-quantifier`** - Choose between `some` (OR) and `every` (AND) matching
@@ -362,14 +362,14 @@ The project uses modern GitHub Actions with mise integration for consistent tool
 
 ```bash
 # Create and push a semver tag
-git tag v3.1.0
-git push origin v3.1.0
+git tag v1.1.0
+git push origin v1.1.0
 
 # The release workflow will automatically:
 # - Validate the semver format
 # - Run full test suite and build
 # - Create GitHub release with changelog
-# - Update major version tag (v3)
+# - Update major version tag (v1)
 ```
 
 **How to set up locally with mise:**
@@ -377,7 +377,7 @@ git push origin v3.1.0
 ```bash
 git clone https://github.com/santosr2/conditional-paths-action.git
 cd conditional-paths-action
-mise install    # Installs Node 20 and pnpm 8.15.0
+mise install    # Installs Node 20 and pnpm 10
 pnpm install     # Install dependencies
 ```
 

@@ -568,8 +568,8 @@ class OidcClient {
             const res = yield httpclient
                 .getJson(id_token_url)
                 .catch(error => {
-                throw new Error(`Failed to get ID Token. \n
-        Error Code : ${error.statusCode}\n
+                throw new Error(`Failed to get ID Token. \n 
+        Error Code : ${error.statusCode}\n 
         Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
@@ -33765,7 +33765,7 @@ module.exports = parseParams
 /************************************************************************/
 /******/ // The module cache
 /******/ var __webpack_module_cache__ = {};
-/******/
+/******/ 
 /******/ // The require function
 /******/ function __nccwpck_require__(moduleId) {
 /******/ 	// Check if module is in cache
@@ -33779,7 +33779,7 @@ module.exports = parseParams
 /******/ 		// no module.loaded needed
 /******/ 		exports: {}
 /******/ 	};
-/******/
+/******/ 
 /******/ 	// Execute the module function
 /******/ 	var threw = true;
 /******/ 	try {
@@ -33788,11 +33788,11 @@ module.exports = parseParams
 /******/ 	} finally {
 /******/ 		if(threw) delete __webpack_module_cache__[moduleId];
 /******/ 	}
-/******/
+/******/ 
 /******/ 	// Return the exports of the module
 /******/ 	return module.exports;
 /******/ }
-/******/
+/******/ 
 /************************************************************************/
 /******/ /* webpack/runtime/compat get default export */
 /******/ (() => {
@@ -33805,7 +33805,7 @@ module.exports = parseParams
 /******/ 		return getter;
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/define property getters */
 /******/ (() => {
 /******/ 	// define getter functions for harmony exports
@@ -33817,16 +33817,16 @@ module.exports = parseParams
 /******/ 		}
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/hasOwnProperty shorthand */
 /******/ (() => {
 /******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/compat */
-/******/
+/******/ 
 /******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
-/******/
+/******/ 
 /************************************************************************/
 var __webpack_exports__ = {};
 
