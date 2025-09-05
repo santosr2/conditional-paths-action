@@ -1,6 +1,9 @@
-name: 'Paths Changes Filter'
+name: 'Conditional Paths Action'
 description: 'Execute your workflow steps only if relevant files are modified.'
-author: 'Michal Dorner <dorner.michal@gmail.com>'
+author: 'Rubens Santos <rubenssegundo404@gmail.com>'
+branding:
+  icon: 'filter'
+  color: 'blue'
 inputs:
   token:
     description: 'GitHub Access Token'
@@ -44,12 +47,16 @@ inputs:
       This option takes effect only when changes are detected using git against different base branch.
     required: false
     default: '100'
+  predicate-quantifier:
+    description: |
+      Determines how multiple patterns are matched:
+        'some' - At least one pattern must match (default)
+        'every' - All patterns must match
+    required: false
+    default: 'some'
 outputs:
   changes:
     description: JSON array with names of all filters matching any of changed files
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
-branding:
-  color: blue
-  icon: filter
