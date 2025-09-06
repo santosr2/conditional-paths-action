@@ -1,0 +1,168 @@
+name: License Compliance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Check license compliance weekly
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  license-headers:
+    name: License Header Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Go for license tooling
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        with:
+          go-version: '1.21'
+
+      - name: Install skywalking-eyes license checker
+        run: |
+          go install github.com/apache/skywalking-eyes/cmd/license-eye@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Create .licenserc.yaml configuration
+        run: |
+          cat > .licenserc.yaml << 'EOF'
+          header:
+            license:
+              spdx-id: MIT
+              copyright-owner: conditional-paths-action contributors
+            paths:
+              - '**/*.ts'
+              - '**/*.js'
+              - '**/*.mjs'
+            paths-ignore:
+              - 'node_modules/**'
+              - 'dist/**'
+              - 'lib/**'
+              - 'coverage/**'
+              - '__tests__/**'
+              - '**/*.d.ts'
+              - '**/*.test.ts'
+              - '**/*.bench.ts'
+            comment: on-failure
+          dependency:
+            files:
+              - package.json
+          EOF
+
+      - name: Check license headers
+        id: license-check
+        run: |
+          echo "Checking license headers in source files..."
+          if license-eye header check; then
+            echo "✅ All source files have proper license headers"
+            echo "headers-compliant=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ Some files are missing license headers"
+            echo "headers-compliant=false" >> "$GITHUB_OUTPUT"
+
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              echo "This is a PR, will auto-fix headers"
+              license-eye header fix
+              echo "headers-fixed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "This is not a PR, failing build"
+              exit 1
+            fi
+          fi
+
+      - name: Commit fixed license headers
+        if: steps.license-check.outputs.headers-fixed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "License Header Bot"
+
+          if [[ -n $(git diff --name-only) ]]; then
+            git add -A
+            git commit -m "fix: add missing license headers
+
+            Co-authored-by: License Header Bot <action@github.com>"
+            git push
+            echo "✅ License headers have been automatically added and committed"
+          else
+            echo "No changes needed for license headers"
+          fi
+
+  dependency-licenses:
+    name: Dependency License Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5.0.0
+
+      - name: Setup mise
+        uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check dependency licenses
+        run: pnpm run license-check
+
+      - name: Generate license report
+        run: |
+          {
+            echo "# Dependency License Report";
+            echo "";
+            echo "Generated on: $(date -u)";
+            echo "";
+            echo "## Approved Licenses";
+            echo "- MIT";
+            echo "- ISC";
+            echo "- BSD-2-Clause";
+            echo "- BSD-3-Clause";
+            echo "- Apache-2.0";
+            echo "";
+            echo "## License Summary";
+          } >> license-report.md
+
+          # Generate license summary table
+          pnpm exec license-checker --summary --onlyAllow 'MIT;ISC;BSD-2-Clause;BSD-3-Clause;Apache-2.0;UNLICENSED' --excludePrivatePackages >> license-report.md
+
+      - name: Upload license report
+        uses: actions/upload-artifact@de65e23aa2b7e23d713bb51fbfcb6d502f8667d8 # v4.6.2
+        with:
+          name: license-report-${{ github.sha }}
+          path: license-report.md
+          retention-days: 30
+
+  license-compliance-gate:
+    name: License Compliance Gate
+    runs-on: ubuntu-latest
+    needs: [license-headers, dependency-licenses]
+    if: always()
+    steps:
+      - name: Check all compliance jobs
+        run: |
+          if [[ "${{ needs.license-headers.result }}" != "success" ]] || [[ "${{ needs.dependency-licenses.result }}" != "success" ]]; then
+            echo "❌ License compliance check failed"
+            echo "License headers: ${{ needs.license-headers.result }}"
+            echo "Dependency licenses: ${{ needs.dependency-licenses.result }}"
+            exit 1
+          fi
+          echo "✅ All license compliance checks passed"

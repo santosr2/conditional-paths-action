@@ -1,0 +1,402 @@
+name: GitHub Pages - Docs, Performance & SBOM
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Update documentation and SBOM daily
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  build-site:
+    name: Build Complete GitHub Pages Site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup mise
+        uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
+        with:
+          install: true
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript and generate SBOM
+        run: |
+          pnpm run build
+          pnpm run package
+
+      - name: Generate TypeDoc API documentation
+        run: |
+          # Install typedoc with modern theme
+          pnpm add -D typedoc@latest @typedoc/plugin-missing-exports@latest
+
+          # Generate comprehensive API documentation
+          npx typedoc src/main.ts src/lib/*.ts --out _site/docs \
+            --name "conditional-paths-action API Documentation" \
+            --readme README.md \
+            --exclude "**/*.test.ts" \
+            --exclude "**/__tests__/**" \
+            --exclude "**/*.bench.ts" \
+            --plugin @typedoc/plugin-missing-exports \
+            --githubPages true \
+            --includeVersion \
+            --sort source-order \
+            --categorizeByGroup \
+            --defaultCategory "Core" \
+            --categoryOrder "Core,Filters,Git,Utilities"
+
+      - name: Create main documentation site
+        run: |
+          mkdir -p _site/{sbom,security,performance}
+
+          # Main index page
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>conditional-paths-action - Documentation</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                max-width: 1200px; margin: 0 auto; padding: 40px 20px;
+                line-height: 1.6; color: #333;
+              }
+              .header { text-align: center; margin-bottom: 50px; }
+              .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin: 40px 0; }
+              .card {
+                border: 1px solid #e1e4e8; border-radius: 8px; padding: 24px;
+                transition: transform 0.2s; text-decoration: none; color: inherit;
+              }
+              .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+              .card h3 { margin-top: 0; color: #0366d6; }
+              .badge {
+                background: #0366d6; color: white; padding: 4px 8px;
+                border-radius: 4px; font-size: 12px; margin-right: 8px;
+              }
+              .footer { text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid #e1e4e8; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>🔀 conditional-paths-action</h1>
+              <p>Execute your workflow steps only if relevant files are modified</p>
+              <p>
+                <span class="badge">TypeScript</span>
+                <span class="badge">GitHub Actions</span>
+                <span class="badge">DevSecOps</span>
+                <span class="badge">MIT Licensed</span>
+              </p>
+            </div>
+
+            <div class="grid">
+              <a href="/docs/" class="card">
+                <h3>📚 API Documentation</h3>
+                <p>Complete TypeScript API documentation generated with TypeDoc. Explore all classes, interfaces, and functions.</p>
+              </a>
+
+              <a href="/sbom/" class="card">
+                <h3>🔒 Security & SBOM</h3>
+                <p>Software Bill of Materials, security reports, and compliance documentation for transparency and audit.</p>
+              </a>
+
+              <a href="/performance/" class="card">
+                <h3>⚡ Performance Reports</h3>
+                <p>Bundle analysis, memory profiling, and benchmark results to ensure optimal action performance.</p>
+              </a>
+
+              <a href="https://github.com/santosr2/conditional-paths-action" class="card">
+                <h3>💾 Source Code</h3>
+                <p>View the source code, contribute, or report issues on GitHub. All development happens in the open.</p>
+              </a>
+
+              <a href="https://github.com/santosr2/conditional-paths-action/releases" class="card">
+                <h3>🚀 Releases</h3>
+                <p>Download the latest version, view release notes, and see what's changed in each version.</p>
+              </a>
+
+              <a href="https://github.com/santosr2/conditional-paths-action/actions" class="card">
+                <h3>🔄 CI/CD Status</h3>
+                <p>Monitor build status, test results, and deployment pipelines. All workflows run with full transparency.</p>
+              </a>
+            </div>
+
+            <div class="footer">
+              <p>Built with ❤️ for the GitHub Actions community</p>
+              <p>Last updated: <span id="timestamp"></span></p>
+              <script>document.getElementById('timestamp').textContent = new Date().toISOString().slice(0, 19) + 'Z';</script>
+            </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Create SBOM documentation page
+        run: |
+          # Copy SBOM file
+          cp dist/sbom.json _site/sbom/
+
+          # Create SBOM viewer page
+          cat > _site/sbom/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>SBOM - conditional-paths-action</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; line-height: 1.6; }
+              .header { margin-bottom: 30px; }
+              .metadata { background: #f6f8fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+              .download { margin: 20px 0; }
+              .download a {
+                background: #0366d6; color: white; padding: 10px 20px;
+                text-decoration: none; border-radius: 5px; display: inline-block;
+              }
+              pre { background: #f6f8fa; padding: 20px; border-radius: 8px; overflow-x: auto; }
+              .back { margin-bottom: 20px; }
+              .back a { color: #0366d6; text-decoration: none; }
+            </style>
+          </head>
+          <body>
+            <div class="back">
+              <a href="../">← Back to Documentation</a>
+            </div>
+
+            <div class="header">
+              <h1>🔒 Software Bill of Materials (SBOM)</h1>
+              <p>Transparency and security through comprehensive dependency tracking</p>
+            </div>
+
+            <div class="metadata">
+              <h2>About This SBOM</h2>
+              <ul>
+                <li><strong>Format:</strong> CycloneDX v1.4</li>
+                <li><strong>Generated:</strong> Automatically on every build</li>
+                <li><strong>Purpose:</strong> Supply chain security and compliance</li>
+                <li><strong>Scope:</strong> All production dependencies and build artifacts</li>
+              </ul>
+            </div>
+
+            <div class="download">
+              <a href="sbom.json" download>📥 Download SBOM (JSON)</a>
+            </div>
+
+            <h2>SBOM Contents</h2>
+            <p>The complete SBOM includes all components, licenses, and metadata:</p>
+
+            <div id="sbom-content">
+              <p>Loading SBOM data...</p>
+            </div>
+
+            <script>
+              fetch('sbom.json')
+                .then(response => response.json())
+                .then(data => {
+                  document.getElementById('sbom-content').innerHTML =
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                  document.getElementById('sbom-content').innerHTML =
+                    '<p style="color: red;">Error loading SBOM: ' + error + '</p>';
+                });
+            </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Create security documentation
+        run: |
+          cat > _site/security/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Security - conditional-paths-action</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; line-height: 1.6; }
+              .security-item {
+                background: #f6f8fa; border-left: 4px solid #28a745;
+                padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;
+              }
+              .security-item h3 { margin-top: 0; color: #28a745; }
+              .back { margin-bottom: 20px; }
+              .back a { color: #0366d6; text-decoration: none; }
+            </style>
+          </head>
+          <body>
+            <div class="back">
+              <a href="../">← Back to Documentation</a>
+            </div>
+
+            <h1>🛡️ Security Documentation</h1>
+            <p>Comprehensive security measures implemented in conditional-paths-action</p>
+
+            <div class="security-item">
+              <h3>🔍 Static Analysis Security Testing (SAST)</h3>
+              <p>CodeQL analysis runs on every commit to detect security vulnerabilities, including:</p>
+              <ul>
+                <li>Injection vulnerabilities</li>
+                <li>Cross-site scripting (XSS)</li>
+                <li>Insecure cryptographic practices</li>
+                <li>Authentication and authorization flaws</li>
+              </ul>
+            </div>
+
+            <div class="security-item">
+              <h3>🛡️ Dependency Vulnerability Scanning</h3>
+              <p>Trivy scanner checks all dependencies for known vulnerabilities:</p>
+              <ul>
+                <li>CVE database matching</li>
+                <li>CRITICAL and HIGH severity alerts</li>
+                <li>Automated SARIF reporting</li>
+                <li>GitHub Security tab integration</li>
+              </ul>
+            </div>
+
+            <div class="security-item">
+              <h3>🔐 Secret Detection</h3>
+              <p>GitLeaks scans for accidentally committed secrets:</p>
+              <ul>
+                <li>API keys and tokens</li>
+                <li>Database credentials</li>
+                <li>Private keys and certificates</li>
+                <li>Custom regex patterns</li>
+              </ul>
+            </div>
+
+            <div class="security-item">
+              <h3>📜 License Compliance</h3>
+              <p>Automated license checking ensures legal compliance:</p>
+              <ul>
+                <li>Allowed licenses: MIT, ISC, BSD, Apache 2.0</li>
+                <li>Source code header validation</li>
+                <li>Dependency license scanning</li>
+                <li>SBOM license documentation</li>
+              </ul>
+            </div>
+
+            <div class="security-item">
+              <h3>🔒 GitHub Actions Security</h3>
+              <p>All workflows follow security best practices:</p>
+              <ul>
+                <li>SHA-pinned action versions</li>
+                <li>Minimal required permissions</li>
+                <li>No untrusted input execution</li>
+                <li>Secure artifact handling</li>
+              </ul>
+            </div>
+
+            <p><strong>Security Policy:</strong> For reporting security vulnerabilities, see our
+            <a href="https://github.com/santosr2/conditional-paths-action/security/policy">Security Policy</a></p>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.2.0
+
+      - name: Run performance benchmarks and analysis
+        run: |
+          echo "Running performance benchmarks..."
+
+          # Run benchmarks if available
+          if pnpm run test:bench > benchmark-output.txt 2>&1; then
+            echo "✅ Benchmarks completed successfully"
+          else
+            echo "⚠️ Benchmarks not available, creating placeholder"
+            echo "Benchmarks will be available once test:bench script is implemented" > benchmark-output.txt
+          fi
+
+          # Create performance directory and reports
+          mkdir -p _site/performance
+
+          # Bundle size analysis
+          BUNDLE_SIZE=$(stat -f%z dist/index.js 2>/dev/null || stat -c%s dist/index.js)
+          BUNDLE_SIZE_KB=$((BUNDLE_SIZE / 1024))
+          BUNDLE_SIZE_GZIP=$(gzip -c dist/index.js | wc -c | tr -d ' ')
+          BUNDLE_SIZE_GZIP_KB=$((BUNDLE_SIZE_GZIP / 1024))
+
+          # Generate performance report
+          cat > _site/performance/index.html << EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Performance Report - conditional-paths-action</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; line-height: 1.6; }
+              .metric-card { background: #f6f8fa; border-radius: 8px; padding: 20px; margin: 20px 0; }
+              .metric-value { font-size: 24px; font-weight: bold; color: #0366d6; }
+              .back-link { color: #0366d6; text-decoration: none; }
+              table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+              th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+              th { background-color: #f2f2f2; }
+            </style>
+          </head>
+          <body>
+            <div><a href="../" class="back-link">← Back to Documentation</a></div>
+            <h1>⚡ Performance Report</h1>
+            <p>Generated: $(date -u) | Commit: <code>${{ github.sha }}</code></p>
+
+            <div class="metric-card">
+              <h2>📦 Bundle Analysis</h2>
+              <table>
+                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><td>Bundle Size</td><td class="metric-value">${BUNDLE_SIZE_KB} KB</td></tr>
+                <tr><td>Gzipped Size</td><td class="metric-value">${BUNDLE_SIZE_GZIP_KB} KB</td></tr>
+                <tr><td>GitHub Action Limit</td><td>~500 KB</td></tr>
+              </table>
+            </div>
+
+            <div class="metric-card">
+              <h2>🔍 Bundle Health</h2>
+              <p>Status: $([ ${BUNDLE_SIZE_KB} -lt 400 ] && echo "✅ Excellent" || [ ${BUNDLE_SIZE_KB} -lt 500 ] && echo "⚠️ Good" || echo "❌ Needs optimization")</p>
+              <p>The action bundle is $([ ${BUNDLE_SIZE_KB} -lt 400 ] && echo "well within" || echo "approaching") GitHub Actions size limits.</p>
+            </div>
+
+            <div class="metric-card">
+              <h2>📊 Benchmark Results</h2>
+              <pre>$(head -50 benchmark-output.txt)</pre>
+            </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.1.0
+        with:
+          path: _site/
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-site
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.1.0
