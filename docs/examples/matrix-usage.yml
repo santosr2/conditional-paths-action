@@ -1,0 +1,133 @@
+# Matrix usage example for conditional-paths-action
+# Test with: act -W .github/workflows/examples/matrix-usage.yml
+
+name: Matrix Filter Example
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Test different predicate quantifiers
+  test-quantifiers:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        quantifier: [some, every]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test ${{ matrix.quantifier }} quantifier
+        id: changes
+        uses: ./
+        with:
+          filters: |
+            typescript:
+              - '**/*.ts'
+              - 'src/**'
+          predicate-quantifier: ${{ matrix.quantifier }}
+
+      - name: Show results for ${{ matrix.quantifier }}
+        run: |
+          echo "Quantifier: ${{ matrix.quantifier }}"
+          echo "TypeScript changes: ${{ steps.changes.outputs.typescript }}"
+          echo "Files count: ${{ steps.changes.outputs.typescript_count }}"
+
+  # Test different base branches
+  test-bases:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        base: [main, HEAD~1, HEAD~2]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test base ${{ matrix.base }}
+        id: changes
+        uses: ./
+        with:
+          base: ${{ matrix.base }}
+          filters: |
+            all:
+              - '**'
+
+      - name: Show results for base ${{ matrix.base }}
+        run: |
+          echo "Base: ${{ matrix.base }}"
+          echo "Changes detected: ${{ steps.changes.outputs.all }}"
+          echo "Files count: ${{ steps.changes.outputs.all_count }}"
+
+  # Test change type constraints
+  test-change-types:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test change type constraints
+        id: changes
+        uses: ./
+        with:
+          filters: |
+            added-only:
+              - added: '**'
+            modified-only:
+              - modified: '**'
+            deleted-only:
+              - deleted: '**'
+            added-or-modified:
+              - added|modified: '**'
+            all-changes:
+              - '**'
+          list-files: json
+
+      - name: Show change type results
+        run: |
+          echo "📈 Added only: ${{ steps.changes.outputs.added-only }} (count: ${{ steps.changes.outputs.added-only_count }})"
+          echo "📝 Modified only: ${{ steps.changes.outputs.modified-only }} (count: ${{ steps.changes.outputs.modified-only_count }})"
+          echo "🗑️  Deleted only: ${{ steps.changes.outputs.deleted-only }} (count: ${{ steps.changes.outputs.deleted-only_count }})"
+          echo "🔄 Added or Modified: ${{ steps.changes.outputs.added-or-modified }} (count: ${{ steps.changes.outputs.added-or-modified_count }})"
+          echo "📁 All changes: ${{ steps.changes.outputs.all-changes }} (count: ${{ steps.changes.outputs.all-changes_count }})"
+
+  # Test complex negation patterns
+  test-negation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test negation patterns
+        id: changes
+        uses: ./
+        with:
+          filters: |
+            source-no-tests:
+              - 'src/**'
+              - '!**/*.test.*'
+              - '!**/*.spec.*'
+            config-no-deps:
+              - '*.json'
+              - '!package-lock.json'
+              - '!yarn.lock'
+              - '!pnpm-lock.yaml'
+            docs-no-api:
+              - 'docs/**'
+              - '!docs/api/**'
+
+      - name: Show negation results
+        run: |
+          echo "🔍 Source (no tests): ${{ steps.changes.outputs.source-no-tests }}"
+          echo "⚙️  Config (no deps): ${{ steps.changes.outputs.config-no-deps }}"
+          echo "📚 Docs (no API): ${{ steps.changes.outputs.docs-no-api }}"
