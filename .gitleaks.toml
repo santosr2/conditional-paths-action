@@ -1,0 +1,84 @@
+# GitLeaks configuration for secret detection
+# https://github.com/gitleaks/gitleaks
+
+title = "conditional-paths-action secret detection"
+
+[extend]
+# Use default gitleaks configuration as base
+useDefault = true
+
+[[rules]]
+description = "GitHub Personal Access Token"
+id = "github-pat"
+regex = '''ghp_[0-9a-zA-Z]{36}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+description = "GitHub OAuth Access Token"
+id = "github-oauth"
+regex = '''gho_[0-9a-zA-Z]{36}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+description = "GitHub App Installation Access Token"
+id = "github-app-token"
+regex = '''ghs_[0-9a-zA-Z]{36}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+description = "GitHub Refresh Token"
+id = "github-refresh-token"
+regex = '''ghr_[0-9a-zA-Z]{76}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+description = "Slack Token"
+id = "slack-access-token"
+regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
+tags = ["key", "Slack"]
+
+[[rules]]
+description = "Slack Webhook"
+id = "slack-web-hook"
+regex = '''https://hooks\.slack\.com/services/[A-Za-z0-9+/]{44,46}'''
+tags = ["key", "Slack"]
+
+[[rules]]
+description = "AWS"
+id = "aws-access-token"
+regex = '''AKIA[0-9A-Z]{16}'''
+tags = ["key", "AWS"]
+
+[[rules]]
+description = "Generic API Key"
+id = "generic-api-key"
+regex = '''[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*[=:]\s*['\"]([0-9a-zA-Z\-_=]{8,64})['\"]'''
+tags = ["key", "API"]
+
+# Allow certain patterns that are safe
+[allowlist]
+description = "Global allow list"
+regexes = [
+  '''(v)?[0-9]+\.[0-9]+\.[0-9]+''', # Version numbers
+  '''[0-9a-fA-F]{40}''',            # Git commit hashes (40 chars)
+  '''[0-9a-fA-F]{64}''',            # SHA256 hashes
+  '''placeholder.*''',               # Placeholder values
+  '''example.*''',                   # Example values
+  '''test.*''',                      # Test values
+  '''mock.*''',                      # Mock values
+  '''fake.*''',                      # Fake values
+  '''demo.*''',                      # Demo values
+]
+
+paths = [
+  '''.*\.md''',                      # Markdown files
+  '''.*\.txt''',                     # Text files
+  '''.*\.json\.example''',           # Example files
+  '''.*\.template''',                # Template files
+  '''.*/examples/.*''',              # Example directories
+  '''.*/docs/.*''',                  # Documentation directories
+]
+
+commits = [
+  "67c0c831e3d0e3d0e3d0e3d0e3d0e3d0e3d0e3d0", # Example commit hash
+]

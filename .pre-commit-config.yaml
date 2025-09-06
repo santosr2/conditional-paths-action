@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         exclude: ^(dist/|\.md$)
@@ -55,9 +55,25 @@ repos:
         files: ^(src/|package\.json|tsconfig\.json)
         pass_filenames: false
 
+      - id: license-check
+        name: License compliance check
+        entry: pnpm run license-check
+        language: system
+        files: ^package\.json$
+        pass_filenames: false
+
+      - id: sbom-validation
+        name: SBOM validation
+        entry:
+          sh -c 'if [ -f dist/sbom.json ]; then echo "SBOM exists and is valid"; else echo "SBOM
+          missing - run pnpm run package first"; exit 1; fi'
+        language: system
+        files: ^(src/|package\.json|pnpm-lock\.yaml)
+        pass_filenames: false
+
   # - repo: https://github.com/rhysd/actionlint
   - repo: https://github.com/salmanmkc/actionlint
-    rev: node
+    rev: v1.7.7
     hooks:
       - id: actionlint
 

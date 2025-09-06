@@ -25,7 +25,6 @@
     "package": "ncc build src/main.ts -o dist --source-map --license licenses.txt --minify && pnpm run sbom",
     "package:watch": "pnpm run package -- --watch",
     "test:bench": "vitest bench",
-    "coverage": "vitest run --coverage",
     "clean": "rm -rf dist lib coverage .tsbuildinfo",
     "docs": "typedoc src/main.ts src/lib/*.ts --out docs/api --theme default --name 'conditional-paths-action API'",
     "sbom": "node scripts/generate-sbom.js",
