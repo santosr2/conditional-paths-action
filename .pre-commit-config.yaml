@@ -41,9 +41,9 @@ repos:
         files: \.(ts)$
         pass_filenames: false
 
-      - id: test-unit
-        name: Unit tests
-        entry: pnpm run test:unit
+      - id: test-coverage
+        name: Unit tests with coverage (≥80%)
+        entry: pnpm run test:coverage
         language: system
         files: ^(src/.*\.ts|__tests__/.*\.test\.ts)$
         pass_filenames: false
@@ -62,6 +62,13 @@ repos:
           missing - run pnpm run package first"; exit 1; fi'
         language: system
         files: ^(src/|package\.json|pnpm-lock\.yaml)
+        pass_filenames: false
+
+      - id: security-audit
+        name: Security audit
+        entry: pnpm run security-audit
+        language: system
+        files: ^(package\.json|pnpm-lock\.yaml)$
         pass_filenames: false
 
   # - repo: https://github.com/rhysd/actionlint

@@ -2,7 +2,8 @@
 # https://mise.jdx.dev/
 
 [tools]
-# Node.js version matching engines field in package.json
+# Node.js version for local development (22) - CI tests both 22 and 24
+# Runtime uses Node.js 24 (specified in action.yml)
 node = "22"
 # pnpm version matching packageManager field
 pnpm = "10"

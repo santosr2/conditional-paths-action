@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.4",
-  "serialNumber": "urn:uuid:eee42416-2b1a-4808-af0e-69a509ae31dd",
+  "serialNumber": "urn:uuid:2e61e050-2b33-4f2b-98c4-35352eac04a9",
   "version": 1,
   "metadata": {
-    "timestamp": "2025-09-06T20:37:56.584Z",
+    "timestamp": "2025-09-06T23:43:34.340Z",
     "tools": [
       {
         "vendor": "conditional-paths-action",

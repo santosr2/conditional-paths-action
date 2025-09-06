@@ -40,6 +40,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       major-version: ${{ steps.version.outputs.major-version }}
       is-prerelease: ${{ steps.version.outputs.is-prerelease }}
+      tag-name: ${{ steps.version.outputs.tag-name }}
     steps:
       - name: Validate semver tag
         id: version
@@ -62,6 +63,7 @@ jobs:
             echo "version=$version";
             echo "major-version=$major_version";
             echo "is-prerelease=$is_prerelease";
+            echo "tag-name=$tag";
           } >> "$GITHUB_OUTPUT"
 
           echo "Tag: $tag"
@@ -103,7 +105,7 @@ jobs:
         run: |
           if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
             echo "::error::Build produced uncommitted changes in dist/"
-            git diff --ignore-space-at-eol --text dist/
+            git diff --ignore-space-at-eol --text "dist/"
             exit 1
           fi
 
@@ -145,104 +147,106 @@ jobs:
           CURRENT_TAG="${{ github.ref_name }}"
           VERSION="${CURRENT_TAG#v}"
 
-          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
+          printf "Generating changelog from %s to %s\n" "$PREVIOUS_TAG" "$CURRENT_TAG"
 
           # Generate conventional changelog
           if [[ -n "$PREVIOUS_TAG" ]]; then
             conventional-changelog -p conventionalcommits -r 2 > temp_changelog.md
           else
-            echo "# Changelog\n\n## [$VERSION] - $(date -u +%Y-%m-%d)\n\n### Added\n- Initial release of conditional-paths-action" > temp_changelog.md
+            printf "# Changelog\n\n## [%s] - %s\n\n### Added\n- Initial release of conditional-paths-action" "$VERSION" "$(date -u +%Y-%m-%d)" > temp_changelog.md
           fi
 
           # Create comprehensive release notes
-          cat > release_notes.md << EOF_RELEASE
-          ## 🚀 What's New in $CURRENT_TAG
-
-          EOF_RELEASE
+          {
+            printf "## 🚀 What's New in %s\n\n" "$CURRENT_TAG"
+          } > release_notes.md
 
           # Extract changes from conventional changelog
           if [[ -n "$PREVIOUS_TAG" ]]; then
             # Parse git log for conventional commits and categorize
-            echo "### ✨ Features" >> release_notes.md
-            git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^feat(\(.+\))?:" | sed 's/^feat\(([^)]*)\)\?:\s*/* /' >> release_notes.md || echo "No new features" >> release_notes.md
-            echo "" >> release_notes.md
-
-            echo "### 🐛 Bug Fixes" >> release_notes.md
-            git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^fix(\(.+\))?:" | sed 's/^fix\(([^)]*)\)\?:\s*/* /' >> release_notes.md || echo "No bug fixes" >> release_notes.md
-            echo "" >> release_notes.md
-
-            echo "### 📚 Documentation" >> release_notes.md
-            git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^docs(\(.+\))?:" | sed 's/^docs\(([^)]*)\)\?:\s*/* /' >> release_notes.md || echo "No documentation changes" >> release_notes.md
-            echo "" >> release_notes.md
-
-            echo "### ⚡ Performance" >> release_notes.md
-            git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^perf(\(.+\))?:" | sed 's/^perf\(([^)]*)\)\?:\s*/* /' >> release_notes.md || echo "No performance improvements" >> release_notes.md
-            echo "" >> release_notes.md
-
-            echo "### 🔧 Maintenance" >> release_notes.md
-            git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^(chore|ci|build|refactor)(\(.+\))?:" | sed 's/^[^:]*:\s*/* /' >> release_notes.md || echo "No maintenance changes" >> release_notes.md
-            echo "" >> release_notes.md
+            {
+              echo "### ✨ Features"
+              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^feat(\(.+\))?:" | sed 's/^feat\(([^)]*)\)\?:\s*/* /' || echo "No new features"
+              echo ""
+              echo "### 🐛 Bug Fixes"
+              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^fix(\(.+\))?:" | sed 's/^fix\(([^)]*)\)\?:\s*/* /' || echo "No bug fixes"
+              echo ""
+              echo "### 📚 Documentation"
+              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^docs(\(.+\))?:" | sed 's/^docs\(([^)]*)\)\?:\s*/* /' || echo "No documentation changes"
+              echo ""
+              echo "### ⚡ Performance"
+              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^perf(\(.+\))?:" | sed 's/^perf\(([^)]*)\)\?:\s*/* /' || echo "No performance improvements"
+              echo ""
+              echo "### 🔧 Maintenance"
+              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^(chore|ci|build|refactor)(\(.+\))?:" | sed 's/^[^:]*:\s*/* /' || echo "No maintenance changes"
+              echo ""
+            } >> release_notes.md
 
             # Add commit count and contributors
             COMMIT_COUNT=$(git rev-list --count "$PREVIOUS_TAG..$CURRENT_TAG")
             CONTRIBUTORS=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --format='%an' --no-merges | sort -u | wc -l | tr -d ' ')
 
-            echo "### 📊 Release Statistics" >> release_notes.md
-            echo "- **$COMMIT_COUNT** commits since $PREVIOUS_TAG" >> release_notes.md
-            echo "- **$CONTRIBUTORS** contributor(s) to this release" >> release_notes.md
-            echo "" >> release_notes.md
+            {
+              echo "### 📊 Release Statistics"
+              echo "- **$COMMIT_COUNT** commits since $PREVIOUS_TAG"
+              echo "- **$CONTRIBUTORS** contributor(s) to this release"
+              echo ""
+            } >> release_notes.md
           else
-            echo "### 🎉 Initial Release" >> release_notes.md
-            echo "- Complete TypeScript GitHub Action for conditional path filtering" >> release_notes.md
-            echo "- Node.js 22 runtime with modern ESM support" >> release_notes.md
-            echo "- Comprehensive test coverage (80%+)" >> release_notes.md
-            echo "- SBOM generation and security compliance" >> release_notes.md
-            echo "- DevSecOps CI/CD pipeline" >> release_notes.md
-            echo "" >> release_notes.md
+            {
+              echo "### 🎉 Initial Release"
+              echo "- Complete TypeScript GitHub Action for conditional path filtering"
+              echo "- Node.js 22 runtime with modern ESM support"
+              echo "- Comprehensive test coverage (80%+)"
+              echo "- SBOM generation and security compliance"
+              echo "- DevSecOps CI/CD pipeline"
+              echo ""
+            } >> release_notes.md
           fi
 
           # Add security and compliance info
-          echo "### 🔒 Security & Compliance" >> release_notes.md
-          echo "- ✅ SBOM (Software Bill of Materials) included" >> release_notes.md
-          echo "- ✅ All dependencies scanned for vulnerabilities" >> release_notes.md
-          echo "- ✅ License compliance verified" >> release_notes.md
-          echo "- ✅ Secret scanning completed" >> release_notes.md
-          echo "- 📄 [View SBOM](https://santosr2.github.io/conditional-paths-action/sbom/)" >> release_notes.md
-          echo "" >> release_notes.md
+          {
+            echo "### 🔒 Security & Compliance"
+            echo "- ✅ SBOM (Software Bill of Materials) included"
+            echo "- ✅ All dependencies scanned for vulnerabilities"
+            echo "- ✅ License compliance verified"
+            echo "- ✅ Secret scanning completed"
+            echo "- 📄 [View SBOM](https://santosr2.github.io/conditional-paths-action/sbom/)"
+          } >> release_notes.md
 
-          # Usage section
-          echo "## 📖 Usage" >> release_notes.md
-          echo "" >> release_notes.md
-          echo '```yaml' >> release_notes.md
-          echo "- uses: santosr2/conditional-paths-action@$CURRENT_TAG" >> release_notes.md
-          echo "  with:" >> release_notes.md
-          echo "    filters: |" >> release_notes.md
-          echo "      frontend:" >> release_notes.md
-          echo "        - 'src/frontend/**'" >> release_notes.md
-          echo "      backend:" >> release_notes.md
-          echo "        - 'src/backend/**'" >> release_notes.md
-          echo "      docs:" >> release_notes.md
-          echo "        - '*.md'" >> release_notes.md
-          echo "        - 'docs/**'" >> release_notes.md
-          echo '```' >> release_notes.md
-          echo "" >> release_notes.md
-
-          # Links section
-          echo "## 🔗 Links" >> release_notes.md
-          echo "- 📖 [Documentation](https://santosr2.github.io/conditional-paths-action/)" >> release_notes.md
-          echo "- 🛡️ [Security Report](https://santosr2.github.io/conditional-paths-action/security/)" >> release_notes.md
-          echo "- ⚡ [Performance Report](https://santosr2.github.io/conditional-paths-action/performance/)" >> release_notes.md
-          if [[ -n "$PREVIOUS_TAG" ]]; then
-            echo "- 📋 [Full Changelog](https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...$CURRENT_TAG)" >> release_notes.md
-          fi
-          echo "" >> release_notes.md
+          {
+            echo ""
+            echo "## 📖 Usage"
+            echo ""
+            echo '```yaml'
+            echo "- uses: santosr2/conditional-paths-action@$CURRENT_TAG"
+            echo "  with:"
+            echo "    filters: |"
+            echo "      frontend:"
+            echo "        - 'src/frontend/**'"
+            echo "      backend:"
+            echo "        - 'src/backend/**'"
+            echo "      docs:"
+            echo "        - '*.md'"
+            echo "        - 'docs/**'"
+            echo '```'
+            echo ""
+            echo "## 🔗 Links"
+            echo "- 📖 [Documentation](https://santosr2.github.io/conditional-paths-action/)"
+            echo "- 🛡️ [Security Report](https://santosr2.github.io/conditional-paths-action/security/)"
+            echo "- ⚡ [Performance Report](https://santosr2.github.io/conditional-paths-action/performance/)"
+            if [[ -n "$PREVIOUS_TAG" ]]; then
+              echo "- 📋 [Full Changelog](https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...$CURRENT_TAG)"
+            fi
+            echo ""
+          } >> release_notes.md
 
           # Set output for release creation
           {
             echo 'notes<<EOF'
             cat release_notes.md
             echo 'EOF'
-          } >> $GITHUB_OUTPUT
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
@@ -287,6 +291,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate-tag, create-release]
     steps:
+      - name: Checkout action repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@abefc31eafcfbdf6c5336127c1346fdae79ff41c # v5.0.0
+        with:
+          name: release-artifacts-${{ github.sha }}
+
       - name: Checkout test repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
@@ -294,7 +306,7 @@ jobs:
           path: test-repo
 
       - name: Test released action
-        uses: santosr2/conditional-paths-action@${{ github.ref_name }}
+        uses: ./
         id: changes
         with:
           working-directory: test-repo

@@ -57,6 +57,38 @@ inputs:
 outputs:
   changes:
     description: JSON array with names of all filters matching any of changed files
+  # Dynamic outputs are generated for each filter name defined in the filters input.
+  # Below are examples of commonly used filter names in this repository:
+  workflows:
+    description: Boolean indicating if workflow files were changed
+  workflows_count:
+    description: Number of changed workflow files
+  workflows_files:
+    description: List of changed workflow files (if list-files is enabled)
+  workflow:
+    description: Boolean indicating if workflow files were changed
+  workflow_count:
+    description: Number of changed workflow files
+  workflow_files:
+    description: List of changed workflow files (if list-files is enabled)
+  src:
+    description: Boolean indicating if source files were changed
+  src_count:
+    description: Number of changed source files
+  src_files:
+    description: List of changed source files (if list-files is enabled)
+  tests:
+    description: Boolean indicating if test files were changed
+  tests_count:
+    description: Number of changed test files
+  tests_files:
+    description: List of changed test files (if list-files is enabled)
+  docs:
+    description: Boolean indicating if documentation files were changed
+  docs_count:
+    description: Number of changed documentation files
+  docs_files:
+    description: List of changed documentation files (if list-files is enabled)
 runs:
   using: 'node24'
   main: 'dist/index.js'

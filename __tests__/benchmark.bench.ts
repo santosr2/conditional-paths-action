@@ -4,7 +4,7 @@
  */
 
 import { bench, describe } from 'vitest'
-import { Filter } from '../src/lib/filter.js'
+import { Filter, PredicateQuantifier } from '../src/lib/filter.js'
 import { csvEscape } from '../src/lib/list-format/csv-escape.js'
 import { shellEscape } from '../src/lib/list-format/shell-escape.js'
 import { ChangeStatus } from '../src/file.js'
@@ -69,31 +69,31 @@ config:
   }))
 
   bench('simple filter matching - 10 files', () => {
-    const filter = new Filter(simpleFiltersYaml, { predicateQuantifier: 'some' })
+    const filter = new Filter(simpleFiltersYaml, { predicateQuantifier: PredicateQuantifier.SOME })
     filter.match(testFiles)
   })
 
   bench('complex filter matching - 10 files', () => {
-    const filter = new Filter(complexFiltersYaml, { predicateQuantifier: 'some' })
+    const filter = new Filter(complexFiltersYaml, { predicateQuantifier: PredicateQuantifier.SOME })
     filter.match(testFiles)
   })
 
   bench('simple filter matching - 1000 files', () => {
-    const filter = new Filter(simpleFiltersYaml, { predicateQuantifier: 'some' })
+    const filter = new Filter(simpleFiltersYaml, { predicateQuantifier: PredicateQuantifier.SOME })
     filter.match(largeFileSet)
   })
 
   bench('complex filter matching - 1000 files', () => {
-    const filter = new Filter(complexFiltersYaml, { predicateQuantifier: 'some' })
+    const filter = new Filter(complexFiltersYaml, { predicateQuantifier: PredicateQuantifier.SOME })
     filter.match(largeFileSet)
   })
 
   bench('filter creation and YAML parsing', () => {
-    new Filter(complexFiltersYaml, { predicateQuantifier: 'some' })
+    new Filter(complexFiltersYaml, { predicateQuantifier: PredicateQuantifier.SOME })
   })
 
   bench('filter matching with "every" quantifier', () => {
-    const filter = new Filter(simpleFiltersYaml, { predicateQuantifier: 'every' })
+    const filter = new Filter(simpleFiltersYaml, { predicateQuantifier: PredicateQuantifier.EVERY })
     filter.match(testFiles)
   })
 })
@@ -173,20 +173,123 @@ test:
   - "${patterns[1]}"
   - "${patterns[2]}"
 `,
-      { predicateQuantifier: 'some' }
+      { predicateQuantifier: PredicateQuantifier.SOME }
     )
     filter.match([])
   })
 
   bench('single pattern match against multiple files', () => {
-    const filter = new Filter(`test:\n  - "src/**/*.ts"`, { predicateQuantifier: 'some' })
+    const filter = new Filter(`test:\n  - "src/**/*.ts"`, {
+      predicateQuantifier: PredicateQuantifier.SOME
+    })
     const files = testPaths.map(filename => ({ filename, status: ChangeStatus.Modified }))
     filter.match(files)
   })
 
   bench('multiple patterns against single file', () => {
     const filtersYaml = patterns.map((pattern, i) => `filter${i}:\n  - "${pattern}"`).join('\n')
-    const filter = new Filter(filtersYaml, { predicateQuantifier: 'some' })
+    const filter = new Filter(filtersYaml, { predicateQuantifier: PredicateQuantifier.SOME })
     filter.match([{ filename: 'src/main.ts', status: ChangeStatus.Modified }])
+  })
+})
+
+describe('Memory and Scale Performance', () => {
+  // Test performance with very large file sets (realistic for large monorepos)
+  const megaFileSet = Array.from({ length: 10000 }, (_, i) => ({
+    filename: `src/packages/pkg-${Math.floor(i / 100)}/components/Component${i % 100}.tsx`,
+    status:
+      i % 4 === 0
+        ? ChangeStatus.Added
+        : i % 4 === 1
+          ? ChangeStatus.Modified
+          : i % 4 === 2
+            ? ChangeStatus.Deleted
+            : ChangeStatus.Copied
+  }))
+
+  const monorepoFilters = `
+apps:
+  - "apps/**"
+packages:
+  - "packages/**"
+  - "!packages/**/node_modules/**"
+  - "!packages/**/dist/**"
+components:
+  - "**/components/**/*.{ts,tsx}"
+  - "**/ui/**/*.{ts,tsx}"
+tests:
+  - "**/*.test.{ts,tsx,js}"
+  - "**/__tests__/**"
+  - "**/spec/**"
+docs:
+  - "**/*.md"
+  - "**/docs/**"
+  - "!node_modules/**"
+config:
+  - "**/package.json"
+  - "**/tsconfig*.json"
+  - "**/*.config.{js,ts,mjs}"
+  - ".github/**"
+`
+
+  bench('monorepo filter matching - 10K files', () => {
+    const filter = new Filter(monorepoFilters, { predicateQuantifier: PredicateQuantifier.SOME })
+    filter.match(megaFileSet)
+  })
+
+  bench('filter creation - complex monorepo config', () => {
+    new Filter(monorepoFilters, { predicateQuantifier: PredicateQuantifier.SOME })
+  })
+
+  bench('every quantifier - large file set', () => {
+    const filter = new Filter(monorepoFilters, { predicateQuantifier: PredicateQuantifier.EVERY })
+    filter.match(megaFileSet.slice(0, 1000)) // Smaller set for every quantifier
+  })
+})
+
+describe('Cold Start Performance', () => {
+  // Simulate GitHub Actions cold start scenarios
+  bench('action initialization simulation', () => {
+    // This simulates the typical initialization path
+    const filter = new Filter(
+      `
+frontend:
+  - "src/frontend/**"
+  - "packages/ui/**"
+backend:
+  - "src/backend/**"
+  - "api/**"
+  - "server/**"
+`,
+      { predicateQuantifier: PredicateQuantifier.SOME }
+    )
+
+    const typicalChanges = [
+      { filename: 'src/frontend/App.tsx', status: ChangeStatus.Modified },
+      { filename: 'src/backend/routes.ts', status: ChangeStatus.Added },
+      { filename: 'package.json', status: ChangeStatus.Modified }
+    ]
+
+    const results = filter.match(typicalChanges)
+    // Simulate output processing
+    Object.keys(results).forEach(key => {
+      const files = results[key] || []
+      files.map((f: { filename: string }) => f.filename).join(',')
+    })
+  })
+
+  bench('rapid sequential filter operations', () => {
+    const configs = [
+      'filter1:\n  - "src/**"',
+      'filter2:\n  - "tests/**"',
+      'filter3:\n  - "docs/**"'
+    ]
+
+    const testFile = [{ filename: 'src/main.ts', status: ChangeStatus.Modified }]
+
+    configs.forEach(config => {
+      const filter = new Filter(config, { predicateQuantifier: PredicateQuantifier.SOME })
+      filter.match(testFile)
+    })
   })
 })
