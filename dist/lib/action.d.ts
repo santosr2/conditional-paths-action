@@ -1,12 +1,4 @@
 /**
- * @fileoverview Core action logic for the Paths Filter GitHub Action.
- *
- * This module contains the main business logic for detecting changed files and applying
- * filters to determine which paths have been modified. It handles various GitHub workflow
- * trigger types (pull requests, pushes, etc.) and integrates with both the GitHub API
- * and local git commands to gather file change information.
- */
-/**
  * Main entry point for the paths filter action.
  *
  * Orchestrates the entire workflow: reads inputs, validates configuration, detects changed files,

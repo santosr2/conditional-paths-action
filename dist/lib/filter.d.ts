@@ -1,12 +1,5 @@
-/**
- * @fileoverview Filter system for matching files against pattern rules.
- *
- * This module provides the core filtering functionality that matches changed files
- * against user-defined glob patterns and change type rules. It supports complex
- * filter configurations with multiple patterns, change type restrictions, and
- * different logical quantifiers (AND/OR matching).
- */
-import { File, ChangeStatus } from '../file.js';
+import type { File } from '../file.js';
+import { ChangeStatus } from '../file.js';
 /**
  * Internal representation of one item in named filter rule.
  * Created as simplified form of data in FilterItemYaml after parsing.

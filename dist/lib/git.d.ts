@@ -1,11 +1,4 @@
-/**
- * @fileoverview Git operations for detecting file changes.
- *
- * This module provides functions for interacting with git to detect file changes
- * in various scenarios: last commit, between refs, on HEAD, and since merge-base.
- * It handles repository fetching, reference resolution, and parsing of git diff output.
- */
-import { File } from '../file.js';
+import type { File } from '../file.js';
 /** The null SHA used by git to represent non-existent commits */
 export declare const NULL_SHA = "0000000000000000000000000000000000000000";
 /** Git reference to the current HEAD */
