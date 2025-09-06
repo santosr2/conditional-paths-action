@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Create Release PR or Release
         id: release
-        uses: googleapis/release-please-action@cc61a07e2da466bebbc19b3a7dd01d6aecb20d1e # v4.1.0
+        uses: googleapis/release-please-action@c2a5a2bd6a758a0937f1ddb1e8950609867ed15c # v4.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
@@ -245,7 +245,7 @@ jobs:
           } >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
