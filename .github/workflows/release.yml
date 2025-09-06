@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Create Release PR or Release
         id: release
-        uses: googleapis/release-please-action@cc61a07e2da466bebbc19b3a7dd01d6aecb20d1e # v4.1.0
+        uses: googleapis/release-please-action@c2a5a2bd6a758a0937f1ddb1e8950609867ed15c # v4.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
