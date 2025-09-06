@@ -1,0 +1,74 @@
+# Sample repository structure for testing
+
+apps/
+├── web/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Button.tsx
+│   │   │   └── Input.tsx
+│   │   ├── pages/
+│   │   │   └── index.tsx
+│   │   └── main.tsx
+│   ├── package.json
+│   └── vite.config.ts
+├── mobile/
+│   ├── src/
+│   │   ├── components/
+│   │   └── screens/
+│   └── package.json
+
+packages/
+├── ui/
+│   ├── src/
+│   │   ├── Button/
+│   │   └── Input/
+│   └── package.json
+├── utils/
+│   ├── src/
+│   │   ├── string.ts
+│   │   └── date.ts
+│   └── package.json
+
+services/
+├── auth/
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   └── routes/
+│   ├── Dockerfile
+│   └── package.json
+├── api/
+│   ├── src/
+│   └── package.json
+
+shared/
+├── types/
+│   ├── user.ts
+│   └── api.ts
+├── config/
+│   └── database.ts
+
+docs/
+├── api/
+│   └── auth.md
+├── guides/
+│   └── setup.md
+└── README.md
+
+.github/
+├── workflows/
+│   ├── ci.yml
+│   ├── deploy.yml
+│   └── test.yml
+└── actions/
+    └── setup/
+
+tests/
+├── e2e/
+├── integration/
+└── fixtures/
+
+infra/
+├── terraform/
+├── k8s/
+└── docker-compose.yml

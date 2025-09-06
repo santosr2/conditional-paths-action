@@ -25,7 +25,7 @@ describe('matching tests', () => {
     const yaml = `
     src: "src/**/*.js"
     `
-    let filter = new Filter(yaml)
+    const filter = new Filter(yaml)
     const files = modified(['src/app/module/file.js'])
     const match = filter.match(files)
     expect(match.src).toEqual(files)
@@ -180,7 +180,7 @@ describe('matching specific change status', () => {
     add:
       - added: "**/*"
     `
-    let filter = new Filter(yaml)
+    const filter = new Filter(yaml)
     const match = filter.match(modified(['file.js']))
     expect(match.add).toEqual([])
   })
@@ -190,7 +190,7 @@ describe('matching specific change status', () => {
     add:
       - added: "**/*"
     `
-    let filter = new Filter(yaml)
+    const filter = new Filter(yaml)
     const files = [{ status: ChangeStatus.Added, filename: 'file.js' }]
     const match = filter.match(files)
     expect(match.add).toEqual(files)
@@ -201,7 +201,7 @@ describe('matching specific change status', () => {
     addOrModify:
       - added|modified: "**/*"
     `
-    let filter = new Filter(yaml)
+    const filter = new Filter(yaml)
     const files = [{ status: ChangeStatus.Modified, filename: 'file.js' }]
     const match = filter.match(files)
     expect(match.addOrModify).toEqual(files)
@@ -215,7 +215,7 @@ describe('matching specific change status', () => {
     src:
       - modified: *shared
     `
-    let filter = new Filter(yaml)
+    const filter = new Filter(yaml)
     const files = modified(['config/file.js', 'common/anotherFile.js'])
     const match = filter.match(files)
     expect(match.src).toEqual(files)
