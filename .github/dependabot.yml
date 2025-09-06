@@ -9,36 +9,65 @@ updates:
       time: '04:00'
       timezone: 'Etc/UTC'
     open-pull-requests-limit: 10
+    target-branch: 'main'
     assignees:
-      - santosr2
+      - 'santosr2'
     commit-message:
       prefix: 'deps'
+      prefix-development: 'deps-dev'
       include: 'scope'
+    labels:
+      - 'dependencies'
+      - 'automated'
     groups:
-      # Group development dependencies
-      dev-dependencies:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
-        exclude-patterns:
-          - '@types/*' # Type definitions get their own group
-      # Group production dependencies
-      production-dependencies:
-        dependency-type: production
-        update-types:
-          - minor
-          - patch
-      # Separate group for type definitions
-      type-definitions:
+      # Group all TypeScript-related packages
+      typescript:
         patterns:
           - '@types/*'
-        update-types:
-          - minor
-          - patch
-    # Security updates for all dependency types
+          - 'typescript'
+          - 'ts-*'
+          - '@typescript-eslint/*'
+      # Group testing frameworks and related tools
+      testing:
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+          - 'vitest-*'
+          - 'c8'
+          - 'coverage-*'
+      # Group linting and formatting tools
+      linting:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
+          - 'eslint-*'
+          - 'prettier'
+          - 'prettier-*'
+      # Group build and bundling tools
+      build-tools:
+        patterns:
+          - '@vercel/ncc'
+          - 'ncc'
+          - 'rollup'
+          - 'rollup-*'
+          - 'esbuild'
+          - 'webpack'
+          - 'webpack-*'
+      # Group GitHub Actions related dependencies
+      github-actions:
+        patterns:
+          - '@actions/*'
+          - 'actions-*'
+    # Security updates get higher priority
+    allow:
+      - dependency-type: 'direct'
+      - dependency-type: 'indirect'
+    # Ignore specific packages that require manual review
     ignore:
-      # Ignore major version updates (handled manually)
+      # Pin specific versions that we want to control manually
+      - dependency-name: 'node'
+        update-types: ['version-update:semver-major']
+      # Handle major updates manually for critical packages
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
 
@@ -51,16 +80,33 @@ updates:
       time: '04:30'
       timezone: 'Etc/UTC'
     open-pull-requests-limit: 5
+    target-branch: 'main'
     assignees:
-      - santosr2
+      - 'santosr2'
     commit-message:
       prefix: 'ci'
       include: 'scope'
-    # Group all GitHub Actions updates
+    labels:
+      - 'github-actions'
+      - 'security'
+      - 'automated'
+    # Group actions by organization/purpose
     groups:
-      github-actions:
+      # Group all actions from the same organization
+      actions-org:
         patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
+          - 'actions/*'
+      github-org:
+        patterns:
+          - 'github/*'
+      # Group security-related actions
+      security-actions:
+        patterns:
+          - '*/codeql-action*'
+          - '*/security-*'
+          - 'aquasecurity/*'
+          - 'codecov/*'
+    # Allow all types of updates for security
+    allow:
+      - dependency-type: 'direct'
+      - dependency-type: 'indirect'
