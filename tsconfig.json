@@ -1,14 +1,15 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2023",
     "module": "ES2022",
-    "lib": ["ES2022"],
-    "outDir": "./lib",
+    "lib": ["ES2023"],
+    "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
@@ -27,6 +28,8 @@
     "exactOptionalPropertyTypes": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo"
   },

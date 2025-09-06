@@ -48,13 +48,6 @@ repos:
         files: ^(src/.*\.ts|__tests__/.*\.test\.ts)$
         pass_filenames: false
 
-      - id: package-build
-        name: Package for distribution
-        entry: pnpm run package
-        language: system
-        files: ^(src/|package\.json|tsconfig\.json)
-        pass_filenames: false
-
       - id: license-check
         name: License compliance check
         entry: pnpm run license-check
@@ -73,7 +66,7 @@ repos:
 
   # - repo: https://github.com/rhysd/actionlint
   - repo: https://github.com/salmanmkc/actionlint
-    rev: v1.7.7
+    rev: node
     hooks:
       - id: actionlint
 
