@@ -1,3 +1,27 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * 
+ * Copyright (c) 2024 conditional-paths-action contributors
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 /**
  * @fileoverview Core action logic for the Paths Filter GitHub Action.
  *
@@ -11,17 +35,17 @@ import * as fs from 'fs'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 // Define interface for GitHub API file object
-import { PushEvent, PullRequestEvent } from '@octokit/webhooks-types'
+import type { PushEvent, PullRequestEvent } from '@octokit/webhooks-types'
 
 import {
   isPredicateQuantifier,
   Filter,
-  FilterConfig,
-  FilterResults,
   PredicateQuantifier,
   SUPPORTED_PREDICATE_QUANTIFIERS
 } from './filter.js'
-import { File, ChangeStatus } from '../file.js'
+import type { FilterConfig, FilterResults } from './filter.js'
+import type { File } from '../file.js'
+import { ChangeStatus } from '../file.js'
 import * as git from './git.js'
 import { backslashEscape, shellEscape } from './list-format/shell-escape.js'
 import { csvEscape } from './list-format/csv-escape.js'
@@ -177,7 +201,7 @@ async function getChangedFiles(
       | string
       | undefined
     const currentRef = await git.getCurrentRef()
-    const resolvedBase = base || baseSha || defaultBranch
+    const resolvedBase = base ?? baseSha ?? defaultBranch
     if (!resolvedBase) {
       throw new Error('Unable to determine base branch for comparison')
     }
@@ -314,7 +338,7 @@ async function getChangedFilesFromApi(
 
         // Handle file renames by splitting them into separate add/delete operations
         // This ensures consistent behavior with git diff output
-        if (row.status === ChangeStatus.Renamed) {
+        if (row.status === 'renamed') {
           files.push({
             filename: row.filename,
             status: ChangeStatus.Added
