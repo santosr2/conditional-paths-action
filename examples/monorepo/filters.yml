@@ -1,0 +1,72 @@
+# Advanced monorepo filter example with change type constraints
+
+# Frontend packages
+web-app:
+  - 'packages/web/**'
+  - 'apps/web/**'
+  - added|modified: 'shared/ui/**'
+
+mobile-app:
+  - 'packages/mobile/**'
+  - 'apps/mobile/**'
+  - added|modified: 'shared/components/**'
+
+# Backend services
+auth-service:
+  - 'services/auth/**'
+  - added|modified: 'shared/types/**'
+
+api-gateway:
+  - 'services/gateway/**'
+  - added|modified: 'shared/middleware/**'
+
+# Shared libraries (affects multiple packages)
+shared-ui:
+  - 'shared/ui/**'
+  - 'packages/design-system/**'
+
+shared-utils:
+  - 'shared/utils/**'
+  - 'packages/common/**'
+
+# Infrastructure and DevOps
+infrastructure:
+  - 'infra/**'
+  - 'terraform/**'
+  - 'k8s/**'
+  - '.github/workflows/**'
+  - 'docker-compose*.yml'
+  - 'Dockerfile*'
+
+# Documentation (any change)
+docs:
+  - 'docs/**'
+  - 'README*.md'
+  - 'CHANGELOG*.md'
+  - '**/*.mdx'
+
+# Root configuration (affects entire repo)
+root-config:
+  - 'package.json'
+  - 'pnpm-workspace.yaml'
+  - 'nx.json'
+  - 'turbo.json'
+  - 'lerna.json'
+  - '.gitignore'
+  - '.eslintrc*'
+  - '.prettierrc*'
+  - 'tsconfig.json'
+
+# Database changes
+database:
+  - added|modified: '**/*.sql'
+  - added|modified: '**/migrations/**'
+  - modified: '**/schema.prisma'
+  - added: '**/seeds/**'
+
+# CI/CD changes
+ci-cd:
+  - '.github/workflows/**'
+  - '.github/actions/**'
+  - modified: '**/Dockerfile'
+  - added|modified: '**/*.dockerfile'

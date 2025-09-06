@@ -1,0 +1,132 @@
+# Monorepo usage example for conditional-paths-action
+# Test with: act -W .github/workflows/examples/monorepo-usage.yml -j test-monorepo-filters
+
+name: Monorepo Filter Example
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-monorepo-filters:
+    runs-on: ubuntu-latest
+    outputs:
+      web-app: ${{ steps.changes.outputs.web-app }}
+      mobile-app: ${{ steps.changes.outputs.mobile-app }}
+      auth-service: ${{ steps.changes.outputs.auth-service }}
+      api-gateway: ${{ steps.changes.outputs.api-gateway }}
+      shared-ui: ${{ steps.changes.outputs.shared-ui }}
+      shared-utils: ${{ steps.changes.outputs.shared-utils }}
+      infrastructure: ${{ steps.changes.outputs.infrastructure }}
+      database: ${{ steps.changes.outputs.database }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes in monorepo
+        id: changes
+        uses: ./
+        with:
+          filters: examples/monorepo/filters.yml
+          list-files: shell
+          predicate-quantifier: some
+
+      - name: Show all detected changes
+        run: |
+          echo "🔍 Changes detected in: ${{ steps.changes.outputs.changes }}"
+          echo ""
+          echo "📦 Package changes:"
+          echo "  Web App: ${{ steps.changes.outputs.web-app }}"
+          echo "  Mobile App: ${{ steps.changes.outputs.mobile-app }}"
+          echo ""
+          echo "🔧 Service changes:"
+          echo "  Auth Service: ${{ steps.changes.outputs.auth-service }}"
+          echo "  API Gateway: ${{ steps.changes.outputs.api-gateway }}"
+          echo ""
+          echo "📚 Shared Library changes:"
+          echo "  Shared UI: ${{ steps.changes.outputs.shared-ui }}"
+          echo "  Shared Utils: ${{ steps.changes.outputs.shared-utils }}"
+          echo ""
+          echo "🏗️  Infrastructure: ${{ steps.changes.outputs.infrastructure }}"
+          echo "🗄️  Database: ${{ steps.changes.outputs.database }}"
+
+  # Build jobs - only run if relevant changes detected
+  build-web-app:
+    needs: test-monorepo-filters
+    if:
+      needs.test-monorepo-filters.outputs.web-app == 'true' ||
+      needs.test-monorepo-filters.outputs.shared-ui == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Build Web App
+        run: |
+          echo "🌐 Building Web App..."
+          echo "Changes in web-app or shared-ui detected"
+
+  build-mobile-app:
+    needs: test-monorepo-filters
+    if:
+      needs.test-monorepo-filters.outputs.mobile-app == 'true' ||
+      needs.test-monorepo-filters.outputs.shared-utils == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Build Mobile App
+        run: |
+          echo "📱 Building Mobile App..."
+          echo "Changes in mobile-app or shared-utils detected"
+
+  test-auth-service:
+    needs: test-monorepo-filters
+    if: needs.test-monorepo-filters.outputs.auth-service == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Test Auth Service
+        run: |
+          echo "🔐 Testing Auth Service..."
+          echo "Changes in auth-service detected"
+
+  test-api-gateway:
+    needs: test-monorepo-filters
+    if: needs.test-monorepo-filters.outputs.api-gateway == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Test API Gateway
+        run: |
+          echo "🚪 Testing API Gateway..."
+          echo "Changes in api-gateway detected"
+
+  deploy-infrastructure:
+    needs: test-monorepo-filters
+    if: needs.test-monorepo-filters.outputs.infrastructure == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy Infrastructure
+        run: |
+          echo "☁️  Deploying Infrastructure..."
+          echo "Changes in infrastructure detected"
+
+  migrate-database:
+    needs: test-monorepo-filters
+    if: needs.test-monorepo-filters.outputs.database == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run Database Migrations
+        run: |
+          echo "🗄️  Running Database Migrations..."
+          echo "Changes in database schemas detected"

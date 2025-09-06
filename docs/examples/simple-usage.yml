@@ -1,0 +1,91 @@
+# Simple usage example for conditional-paths-action
+# Test with: act -W .github/workflows/examples/simple-usage.yml -j test-simple-filters
+
+name: Simple Filter Example
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-simple-filters:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        uses: ./
+        with:
+          filters: examples/simple/filters.yml
+          list-files: json
+
+      - name: Show detected changes
+        run: |
+          echo "Changes detected: ${{ steps.changes.outputs.changes }}"
+          echo "Frontend changed: ${{ steps.changes.outputs.frontend }}"
+          echo "Backend changed: ${{ steps.changes.outputs.backend }}"
+          echo "Tests changed: ${{ steps.changes.outputs.tests }}"
+          echo "Docs changed: ${{ steps.changes.outputs.docs }}"
+          echo "Config changed: ${{ steps.changes.outputs.config }}"
+
+      - name: Run frontend build (conditional)
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          echo "🔨 Building frontend..."
+          echo "Frontend files changed: ${{ steps.changes.outputs.frontend_files }}"
+
+      - name: Run backend tests (conditional)
+        if: steps.changes.outputs.backend == 'true'
+        run: |
+          echo "🧪 Running backend tests..."
+          echo "Backend files changed: ${{ steps.changes.outputs.backend_files }}"
+
+      - name: Run tests (conditional)
+        if: steps.changes.outputs.tests == 'true'
+        run: |
+          echo "✅ Running test suite..."
+          echo "Test files changed: ${{ steps.changes.outputs.tests_files }}"
+
+      - name: Update docs (conditional)
+        if: steps.changes.outputs.docs == 'true'
+        run: |
+          echo "📚 Updating documentation..."
+          echo "Doc files changed: ${{ steps.changes.outputs.docs_files }}"
+
+      - name: Deploy config (conditional)
+        if: steps.changes.outputs.config == 'true'
+        run: |
+          echo "⚙️  Deploying configuration changes..."
+          echo "Config files changed: ${{ steps.changes.outputs.config_files }}"
+
+  # Test different list-files formats
+  test-output-formats:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        format: [json, csv, shell, escape]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test ${{ matrix.format }} format
+        id: changes
+        uses: ./
+        with:
+          filters: |
+            all:
+              - '**'
+          list-files: ${{ matrix.format }}
+
+      - name: Show output format
+        run: |
+          echo "Format: ${{ matrix.format }}"
+          echo "Files: ${{ steps.changes.outputs.all_files }}"

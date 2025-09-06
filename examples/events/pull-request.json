@@ -1,0 +1,39 @@
+{
+  "action": "opened",
+  "number": 123,
+  "pull_request": {
+    "id": 123456789,
+    "number": 123,
+    "state": "open",
+    "title": "Add new feature to frontend",
+    "body": "This PR adds a new dashboard component",
+    "head": {
+      "ref": "feature/dashboard",
+      "sha": "abc123def456"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "def456abc789"
+    },
+    "changed_files": 8,
+    "additions": 245,
+    "deletions": 12
+  },
+  "repository": {
+    "id": 987654321,
+    "name": "conditional-paths-action",
+    "full_name": "user/conditional-paths-action",
+    "owner": {
+      "login": "user",
+      "id": 12345,
+      "type": "User"
+    },
+    "private": false,
+    "default_branch": "main"
+  },
+  "sender": {
+    "login": "developer",
+    "id": 67890,
+    "type": "User"
+  }
+}

@@ -27,7 +27,7 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 
 ### Prerequisites
 
-- Node.js 24 or later
+- Node.js 22 or later
 - pnpm 10 or later
 
 ### Setup
@@ -71,7 +71,30 @@ pnpm test:coverage
 - We use ESLint and Prettier for code formatting
 - Run `pnpm format` to format your code
 - Run `pnpm lint` to check for linting errors
-- Pre-commit hooks will automatically format and lint your code
+- **Pre-commit hooks are mandatory** - they will automatically format, lint, type-check, test, and validate licenses/SBOM
+
+### Pre-commit Hooks Setup
+
+```bash
+# Hooks are installed automatically during pnpm install
+pnpm install
+
+# Manually install if needed
+pre-commit install
+
+# Run hooks on all files
+pre-commit run --all-files
+
+# Skip hooks for emergency commits (not recommended)
+git commit --no-verify
+```
+
+The pre-commit hooks enforce:
+- **Code formatting** with Prettier
+- **Linting** with ESLint and TypeScript type checking
+- **Testing** of affected code
+- **License compliance** validation
+- **SBOM compliance** ensuring security transparency
 
 ### Commit Messages
 

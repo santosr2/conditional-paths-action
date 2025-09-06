@@ -37,6 +37,23 @@ DO NOT create public GitHub issues for security vulnerabilities.
 
 We prefer all communications to be in English.
 
+## Automated Security Checks
+
+This repository implements multiple layers of automated security scanning:
+
+### Active Security Measures
+- **CodeQL Analysis** - Automated vulnerability detection for TypeScript/JavaScript
+- **Secret Scanning** - Prevents accidental credential leaks in commits
+- **Dependency Scanning** - Monitors dependencies for known vulnerabilities
+- **License Compliance** - Validates all dependencies against approved open-source licenses
+- **SBOM Generation** - Provides complete transparency of our software supply chain
+
+### Supply Chain Security
+- **Dependency Pinning** - All GitHub Actions pinned to specific commit SHAs
+- **SBOM (Software Bill of Materials)** - CycloneDX format available at `/dist/sbom.json`
+- **License Verification** - All dependencies validated against MIT, ISC, BSD, and Apache licenses
+- **Pre-commit Security Hooks** - License and SBOM validation on every commit
+
 ## Policy
 
 We follow the principle of [Coordinated Vulnerability Disclosure](https://en.wikipedia.org/wiki/Coordinated_vulnerability_disclosure).

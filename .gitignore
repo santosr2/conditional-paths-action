@@ -68,9 +68,6 @@ scan-results/
 
 # Editor directories and files
 .vscode/
-!.vscode/settings.json
-!.vscode/launch.json  
-!.vscode/tasks.json
 .idea/
 *.swp
 *.swo

@@ -1,0 +1,35 @@
+# Simple filter example for basic file change detection
+
+# Frontend changes
+frontend:
+  - 'src/**/*.{ts,tsx,js,jsx}'
+  - 'components/**'
+  - '!**/*.test.*'
+
+# Backend changes
+backend:
+  - 'api/**'
+  - 'server/**'
+  - '**/*.sql'
+
+# Tests
+tests:
+  - '**/*.test.{ts,tsx,js,jsx}'
+  - '**/*.spec.{ts,tsx,js,jsx}'
+  - 'tests/**'
+  - '__tests__/**'
+
+# Documentation
+docs:
+  - 'docs/**'
+  - '*.md'
+  - '**/*.mdx'
+
+# Configuration
+config:
+  - 'package*.json'
+  - 'tsconfig*.json'
+  - '.github/**'
+  - '*.config.{js,ts,json}'
+  - 'Dockerfile*'
+  - 'docker-compose*.yml'
