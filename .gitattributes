@@ -14,6 +14,9 @@
 *.ico binary
 *.pdf binary
 
+# Mark generated files
+dist/** linguist-generated=true
+
 # Exclude files from exports
 .github export-ignore
 .gitattributes export-ignore
@@ -28,3 +31,11 @@ __tests__ export-ignore
 *.spec.ts export-ignore
 tsconfig.test.json export-ignore
 vitest.config.ts export-ignore
+coverage export-ignore
+.gitleaks.toml export-ignore
+.pre-commit-config.yaml export-ignore
+scripts export-ignore
+examples export-ignore
+docs export-ignore
+.npmrc export-ignore
+mise.toml export-ignore

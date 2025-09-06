@@ -3,7 +3,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/santosr2/conditional-paths-action?display_name=tag&sort=semver)](https://github.com/santosr2/conditional-paths-action/releases)
 [![CI](https://github.com/santosr2/conditional-paths-action/actions/workflows/ci.yml/badge.svg)](https://github.com/santosr2/conditional-paths-action/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/santosr2/conditional-paths-action/actions/workflows/codeql.yml/badge.svg)](https://github.com/santosr2/conditional-paths-action/actions/workflows/codeql.yml)
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Paths%20Changes%20Filter-blue?logo=github)](https://github.com/marketplace/actions/conditional-paths-action)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Conditional%20Paths%20Action-blue?logo=github)](https://github.com/marketplace/actions/conditional-paths-action)
 
 > [!NOTE]
 > This project is forked from [paths-filer](https://github.com/dorny/paths-filter) - [Commit](https://github.com/dorny/paths-filter/commit/de90cc6fb38fc0963ad72b210f1f284cd68cea36)

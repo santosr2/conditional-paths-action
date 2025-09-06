@@ -1,46 +1,73 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: 'dist/*'
+        exclude: ^(dist/|\.md$)
       - id: end-of-file-fixer
-        exclude: 'dist/*'
+        exclude: ^dist/
       - id: check-yaml
+        args: [--allow-multiple-documents]
       - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+        args: ['--fix=lf']
 
   - repo: local
     hooks:
-      - id: prettier
-        name: prettier
-        entry: pnpm exec prettier --check
+      - id: format-check
+        name: Check Prettier formatting
+        entry: pnpm run format:check
         language: system
-        files: \.(ts|js|json|yaml|yml|md)$
+        files: \.(ts|js|mjs|json|md|yml|yaml)$
         pass_filenames: false
 
-      - id: eslint
-        name: eslint
-        entry: pnpm exec eslint --max-warnings=0
+      - id: lint
+        name: ESLint with type checking
+        entry: pnpm run lint
         language: system
         files: \.(ts|js|mjs)$
         pass_filenames: false
 
       - id: typecheck
-        name: typecheck
-        entry: pnpm exec tsc --noEmit
+        name: TypeScript type check
+        entry: pnpm run check
         language: system
-        files: \.ts$
+        files: \.(ts)$
         pass_filenames: false
 
-      - id: test
-        name: test
-        entry: pnpm exec vitest --run
+      - id: test-unit
+        name: Unit tests
+        entry: pnpm run test:unit
         language: system
-        files: \.(ts|js)$
+        files: ^(src/.*\.ts|__tests__/.*\.test\.ts)$
         pass_filenames: false
 
-  # Disabled until actionlint supports Node 24
-  # - repo: https://github.com/rhysd/actionlint
-  #   rev: v1.7.7
-  #   hooks:
-  #     - id: actionlint
+      - id: package-build
+        name: Package for distribution
+        entry: pnpm run package
+        language: system
+        files: ^(src/|package\.json|tsconfig\.json)
+        pass_filenames: false
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+      - id: actionlint
+
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
