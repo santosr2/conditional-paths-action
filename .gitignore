@@ -6,7 +6,11 @@ pnpm-store/
 lib/
 !src/lib
 !dist/lib
+
+# Test coverage
 coverage/
+.nyc_output
+*.lcov
 
 # Note: dist/ must be committed for GitHub Actions to work
 
@@ -31,8 +35,10 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-# nyc test coverage
-.nyc_output
+# Security scan results
+.gitleaks-report.json
+.trivy-results.json
+scan-results/
 
 # Optional npm cache directory
 .npm
@@ -62,9 +68,19 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Editor directories and files
 .vscode/
+!.vscode/settings.json
+!.vscode/launch.json  
+!.vscode/tasks.json
 .idea/
 *.swp
 *.swo
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.old
+*~
 
 # OS metadata
 .DS_Store

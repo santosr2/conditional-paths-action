@@ -2,13 +2,13 @@
   "name": "conditional-paths-action",
   "version": "1.0.0",
   "type": "module",
-  "engines": {
-    "node": ">= 24"
-  },
-  "private": true,
   "description": "Execute your workflow steps only if relevant files are modified.",
-  "main": "lib/main.js",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">= 22"
+  },
   "packageManager": "pnpm@10.15.1",
+  "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit",
@@ -19,9 +19,17 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "package": "ncc build src/main.ts -o dist --source-map --license licenses.txt",
+    "test:unit": "vitest run __tests__ --exclude '__tests__/**/*.{integration,e2e,bench}.test.ts'",
+    "test:integration": "vitest run __tests__/integration.test.ts",
+    "test:e2e": "vitest run __tests__/e2e.test.ts",
+    "package": "ncc build src/main.ts -o dist --source-map --license licenses.txt --minify && pnpm run sbom",
     "package:watch": "pnpm run package -- --watch",
+    "test:bench": "vitest bench",
+    "coverage": "vitest run --coverage",
     "clean": "rm -rf dist lib coverage .tsbuildinfo",
+    "docs": "typedoc src/main.ts src/lib/*.ts --out docs/api --theme default --name 'conditional-paths-action API'",
+    "sbom": "node scripts/generate-sbom.js",
+    "license-check": "license-checker --onlyAllow 'MIT;ISC;BSD-2-Clause;BSD-3-Clause;Apache-2.0;UNLICENSED' --excludePrivatePackages",
     "all": "pnpm run format:check && pnpm run lint && pnpm run check && pnpm run test && pnpm run package",
     "prepare": "pre-commit install || true"
   },
@@ -42,28 +50,34 @@
   ],
   "author": "Rubens Santos <rubenssegundo404@gmail.com>",
   "license": "MIT",
+  "spdxLicenseId": "MIT",
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
-    "@actions/github": "6.0.0",
-    "picomatch": "^2.3.1"
+    "@actions/github": "6.0.1",
+    "picomatch": "^4.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "@octokit/webhooks-types": "^7.6.1",
+    "@types/benchmark": "^2.1.5",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.3.1",
-    "@types/picomatch": "^2.3.4",
+    "@types/picomatch": "^4.0.2",
     "@vercel/ncc": "^0.38.3",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^3.2.4",
+    "benchmark": "^2.1.4",
+    "conventional-changelog-cli": "^5.0.0",
     "eslint": "^9.35.0",
-    "eslint-config-prettier": "^9.1.2",
-    "globals": "^15.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.3.0",
     "js-yaml": "^4.1.0",
+    "license-checker": "^25.0.1",
     "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
+    "typedoc": "^0.28.12",
+    "typescript": "^5.6.3",
     "typescript-eslint": "^8.42.0",
-    "vitest": "^2.1.9",
-    "zod": "^3.25.76"
+    "vitest": "^3.2.4",
+    "zod": "^3.24.1"
   }
 }
