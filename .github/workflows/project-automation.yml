@@ -33,7 +33,7 @@ jobs:
         with:
           # prettier-ignore
           project-url: https://github.com/users/${{ github.repository_owner }}/projects/${{ env.PROJECT_NUMBER }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
 
       - name: Add PR to project
         if: github.event_name == 'pull_request' && github.event.action == 'opened'
@@ -41,7 +41,7 @@ jobs:
         with:
           # prettier-ignore
           project-url: https://github.com/users/${{ github.repository_owner }}/projects/${{ env.PROJECT_NUMBER }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
 
       - name: Move items based on status
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
@@ -179,6 +179,7 @@ jobs:
               const project = projectData.user?.projectV2;
               if (!project) {
                 console.log(`Project ${projectNumber} not found for user ${owner}`);
+                console.log('This may be due to insufficient permissions. Consider using a Personal Access Token (PAT) with project permissions.');
                 return;
               }
 

@@ -53,8 +53,8 @@ jobs:
 
       - name: Generate TypeDoc API documentation
         run: |
-          # Install typedoc with modern theme
-          pnpm add -D typedoc@latest @typedoc/plugin-missing-exports@latest
+          # Install typedoc
+          pnpm add -D typedoc@latest
 
           # Generate comprehensive API documentation
           npx typedoc src/main.ts src/lib/*.ts --out _site/docs \
@@ -63,7 +63,6 @@ jobs:
             --exclude "**/*.test.ts" \
             --exclude "**/__tests__/**" \
             --exclude "**/*.bench.ts" \
-            --plugin @typedoc/plugin-missing-exports \
             --githubPages true \
             --includeVersion \
             --sort source-order \
