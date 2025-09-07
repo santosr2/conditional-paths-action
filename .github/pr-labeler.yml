@@ -1,0 +1,148 @@
+# PR Labeler Configuration
+# Automatically label PRs based on changed files
+
+# Source Code Changes
+'area:core':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/lib/**'
+          - 'src/main.ts'
+
+'area:types':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/file.ts'
+          - 'src/**/*.ts'
+          - 'types/**'
+
+'area:tests':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '__tests__/**'
+          - '**/*.test.ts'
+          - '**/*.spec.ts'
+          - 'vitest.config.ts'
+
+'area:benchmarks':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.bench.ts'
+          - 'benchmarks/**'
+
+# Infrastructure & DevOps
+'area:ci':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/actions/**'
+
+'area:build':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'pnpm-lock.yaml'
+          - 'tsconfig*.json'
+          - 'dist/**'
+          - 'scripts/**'
+          - '.vercel/**'
+
+'area:security':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/security.yml'
+          - '.github/workflows/codeql.yml'
+          - '.gitleaks.toml'
+          - 'SECURITY.md'
+
+'area:deps':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'pnpm-lock.yaml'
+
+# Documentation
+'area:docs':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+          - '.github/ISSUE_TEMPLATE/**'
+          - '.github/PULL_REQUEST_TEMPLATE/**'
+          - 'CONTRIBUTING.md'
+          - 'SECURITY.md'
+          - 'CONTRIBUTORS.md'
+
+'area:examples':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'examples/**'
+          - '.github/workflows/examples/**'
+
+# Configuration
+'area:config':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - '.gitignore'
+          - '.prettierrc'
+          - '.eslintrc*'
+          - 'mise.toml'
+          - '.mise.toml'
+          - '.pre-commit-config.yaml'
+
+'area:license':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'LICENSE'
+          - '.github/workflows/license.yml'
+
+# Release & Distribution
+'area:release':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/release.yml'
+          - 'CHANGELOG.md'
+          - 'action.yml'
+
+'area:sbom':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scripts/generate-sbom.js'
+          - 'dist/sbom.json'
+
+# Priority Labels
+'priority:high':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'SECURITY.md'
+          - 'src/lib/action.ts'
+          - 'action.yml'
+
+'priority:low':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+          - 'examples/**'
+
+# Breaking Changes Indicators
+'breaking-change':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'action.yml' # Changes to action interface
+          - 'src/lib/filter.ts' # Core filter logic changes
+
+# Needs Review Labels
+'needs:security-review':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - 'src/**/*.ts'
+          - 'scripts/**'
+
+'needs:docs-update':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'action.yml'
+          - 'src/lib/**'
+          - 'package.json'

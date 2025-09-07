@@ -78,6 +78,7 @@ scan-results/
 *.bak
 *.old
 *~
+github-actions-update-report.md
 
 # OS metadata
 .DS_Store

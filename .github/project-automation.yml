@@ -1,0 +1,138 @@
+# GitHub Project Board Automation Configuration
+# Automates issue and PR management in GitHub Projects
+
+# Project Board Field Mappings
+status_mapping:
+  # Issue lifecycle
+  'triage': '🔍 Triage'
+  'backlog': '📋 Backlog'
+  'ready': '🚀 Ready'
+  'in_progress': '🚧 In Progress'
+  'in_review': '👀 In Review'
+  'done': '✅ Done'
+  'cancelled': '🚫 Cancelled'
+
+# Priority mappings
+priority_mapping:
+  'priority:critical': '🔥 Critical'
+  'priority:high': '🔴 High'
+  'priority:medium': '🟡 Medium'
+  'priority:low': '🔵 Low'
+
+# Size mappings for estimation
+size_mapping:
+  'size/XS': 'XS (1)'
+  'size/S': 'S (2)'
+  'size/M': 'M (3)'
+  'size/L': 'L (5)'
+  'size/XL': 'XL (8)'
+  'size/XXL': 'XXL (13)'
+
+# Area/Epic mappings
+epic_mapping:
+  'area:core': 'Core Engine'
+  'area:action': 'GitHub Action'
+  'area:security': 'Security & Compliance'
+  'area:performance': 'Performance'
+  'area:docs': 'Documentation'
+  'area:ci': 'DevOps & CI/CD'
+  'area:community': 'Community'
+
+# Automated workflow rules
+automation_rules:
+  # New issues
+  new_issue:
+    - condition: 'created'
+      action: 'add_to_project'
+      status: '🔍 Triage'
+
+  # Issue labeling
+  issue_labeled:
+    - condition: 'label_added:bug'
+      action: 'set_priority'
+      priority: '🔴 High'
+
+    - condition: 'label_added:security'
+      action: 'set_priority'
+      priority: '🔥 Critical'
+
+    - condition: 'label_added:good first issue'
+      action: 'set_status'
+      status: '🚀 Ready'
+
+  # PR workflow
+  pr_opened:
+    - condition: 'opened'
+      action: 'add_to_project'
+      status: '👀 In Review'
+
+  pr_ready_for_review:
+    - condition: 'ready_for_review'
+      action: 'set_status'
+      status: '👀 In Review'
+
+  pr_draft:
+    - condition: 'converted_to_draft'
+      action: 'set_status'
+      status: '🚧 In Progress'
+
+  pr_merged:
+    - condition: 'merged'
+      action: 'set_status'
+      status: '✅ Done'
+
+  pr_closed:
+    - condition: 'closed_unmerged'
+      action: 'set_status'
+      status: '🚫 Cancelled'
+
+# Project hygiene rules
+hygiene_rules:
+  stale_detection:
+    # Items stale for too long
+    - status: '🔍 Triage'
+      days: 7
+      action: 'comment'
+      message:
+        'This item has been in triage for 7 days. Please review and move to appropriate status.'
+
+    - status: '🚧 In Progress'
+      days: 14
+      action: 'comment'
+      message: 'This item has been in progress for 14 days. Is there a blocker we can help with?'
+
+    - status: '👀 In Review'
+      days: 5
+      action: 'comment'
+      message: 'This PR has been in review for 5 days. Please provide feedback or approve.'
+
+  # Unused column detection
+  unused_columns:
+    warning_days: 30
+    action: 'create_issue'
+    title: 'Project Board Hygiene: Unused Column Detected'
+
+  # Missing assignments
+  assignment_rules:
+    - status: '🚧 In Progress'
+      require_assignee: true
+      days: 1
+
+    - status: '👀 In Review'
+      require_reviewer: true
+      days: 1
+
+# Milestone automation
+milestone_automation:
+  # Auto-assign to current milestone
+  auto_assign:
+    - condition: 'label:priority:critical'
+      milestone: 'current'
+
+    - condition: 'label:bug'
+      milestone: 'current'
+
+  # Milestone completion tracking
+  completion_tracking:
+    threshold: 0.8 # 80% completion
+    action: 'notify_maintainers'

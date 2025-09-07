@@ -1,0 +1,184 @@
+name: 'Example: Monorepo Selective CI'
+
+# This workflow demonstrates selective CI for a monorepo setup
+# Test locally with: act push -W .github/workflows/examples/monorepo-selective.yml
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    name: 'Detect Package Changes'
+    runs-on: ubuntu-latest
+    outputs:
+      # App changes
+      webapp: ${{ steps.changes.outputs.webapp }}
+      mobile: ${{ steps.changes.outputs.mobile }}
+      admin: ${{ steps.changes.outputs.admin }}
+
+      # Package changes
+      components: ${{ steps.changes.outputs.components }}
+      utils: ${{ steps.changes.outputs.utils }}
+      client: ${{ steps.changes.outputs.client }}
+
+      # Infrastructure
+      backend: ${{ steps.changes.outputs.backend }}
+      database: ${{ steps.changes.outputs.database }}
+
+      # Cross-cutting
+      shared: ${{ steps.changes.outputs.shared }}
+      config: ${{ steps.changes.outputs.config }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect monorepo changes
+        uses: ./
+        id: changes
+        with:
+          list-files: json
+          filters: |
+            webapp:
+              - 'apps/web/**'
+              - 'packages/ui-components/**'
+
+            mobile:
+              - 'apps/mobile/**'
+              - 'packages/mobile-components/**'
+
+            admin:
+              - 'apps/admin/**'
+              - 'packages/admin-ui/**'
+
+            components:
+              - 'packages/ui-components/**'
+
+            utils:
+              - 'packages/utils/**'
+              - 'packages/shared/**'
+
+            client:
+              - 'packages/api-client/**'
+              - 'packages/types/**'
+
+            backend:
+              - 'services/**'
+              - 'apis/**'
+              - added|modified: '**/*.sql'
+
+            database:
+              - 'database/**'
+              - 'migrations/**'
+              - '**/*.sql'
+
+            shared:
+              - 'packages/shared/**'
+              - 'packages/types/**'
+              - 'packages/constants/**'
+
+            config:
+              - 'package.json'
+              - 'packages/*/package.json'
+              - 'apps/*/package.json'
+              - '**/tsconfig*.json'
+              - '.github/**'
+              - 'docker/**'
+              - '**/*.config.{js,ts,mjs}'
+
+      - name: Show detected changes
+        run: |
+          echo "=== APPS ==="
+          echo "Web App: ${{ steps.changes.outputs.webapp }}"
+          echo "Mobile App: ${{ steps.changes.outputs.mobile }}"
+          echo "Admin Dashboard: ${{ steps.changes.outputs.admin }}"
+          echo ""
+          echo "=== PACKAGES ==="
+          echo "UI Components: ${{ steps.changes.outputs.components }}"
+          echo "Utils: ${{ steps.changes.outputs.utils }}"
+          echo "API Client: ${{ steps.changes.outputs.client }}"
+          echo ""
+          echo "=== INFRASTRUCTURE ==="
+          echo "Backend: ${{ steps.changes.outputs.backend }}"
+          echo "Database: ${{ steps.changes.outputs.database }}"
+          echo ""
+          echo "=== CROSS-CUTTING ==="
+          echo "Shared: ${{ steps.changes.outputs.shared }}"
+          echo "Config: ${{ steps.changes.outputs.config }}"
+
+  # Build and test jobs that run conditionally
+  test-ui-components:
+    name: 'Test UI Components'
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if:
+      needs.detect-changes.outputs.components == 'true' || needs.detect-changes.outputs.shared ==
+      'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test UI components
+        run: echo "Testing UI components package"
+
+  test-web-app:
+    name: 'Test Web App'
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.webapp == 'true' ||
+      needs.detect-changes.outputs.components == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test web app
+        run: echo "Testing web application"
+
+  test-mobile-app:
+    name: 'Test Mobile App'
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.mobile == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test mobile app
+        run: echo "Testing mobile application"
+
+  test-backend:
+    name: 'Test Backend Services'
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.backend == 'true' ||
+      needs.detect-changes.outputs.database == 'true' ||
+      needs.detect-changes.outputs.client == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test backend
+        run: echo "Testing backend services"
+
+  deploy-preview:
+    name: 'Deploy Preview Environment'
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-web-app, test-mobile-app, test-backend]
+    if: |
+      always() &&
+      github.event_name == 'pull_request' &&
+      (needs.detect-changes.outputs.webapp == 'true' ||
+       needs.detect-changes.outputs.mobile == 'true' ||
+       needs.detect-changes.outputs.backend == 'true')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Deploy preview
+        run: echo "Deploying preview environment for changed applications"

@@ -2,22 +2,39 @@
 # https://mise.jdx.dev/
 
 [tools]
-# Node.js version matching engines field in package.json
+# Node.js version for local development (22) - CI tests both 22 and 24
+# Runtime uses Node.js 24 (specified in action.yml)
 node = "22"
 # pnpm version matching packageManager field
-pnpm = "10"
-# Security scanning tool
-gitleaks = "latest"
+pnpm = "10.15.1"
+# Go for license header tooling
+go = "1.21.13"
+# Security scanning tools
+gitleaks = "8.28.0"
 # Pre-commit hooks
 pre-commit = "latest"
+# Documentation generation
+"npm:typedoc" = "latest"
+# Benchmarking tools for performance monitoring
+"npm:@vitest/ui" = "latest"
+# Act for local GitHub Actions testing
+act = "latest"
+# Shell script validation
+shellcheck = "latest"
 
 [env]
 # Ensure pnpm uses the specified version
-PNPM_VERSION = "10"
+PNPM_VERSION = "10.15.1"
 # Security scanning configuration
 GITLEAKS_CONFIG = ".gitleaks.toml"
 # Performance monitoring
 NODE_OPTIONS = "--max-old-space-size=4096"
+# Force color output in CI/CD environments
+FORCE_COLOR = "1"
+# Coverage thresholds
+VITEST_MIN_COVERAGE = "80"
+# CI environment detection - simple pass-through
+CI = "${CI:-false}"
 
 [tasks]
 # Common development tasks
@@ -31,7 +48,9 @@ format = "pnpm run format"
 # DevSecOps tasks
 security = "gitleaks detect --source . --verbose"
 license-check = "pnpm run license-check"
-sbom = "pnpm run sbom"
+license-eye-install = "go install github.com/apache/skywalking-eyes/cmd/license-eye@latest"
+license-headers-fix = "license-eye header fix"
+license-headers-check = "license-eye header check"
 vuln-scan = "pnpm audit --audit-level high"
 
 # Documentation tasks
@@ -39,14 +58,16 @@ docs = "pnpm run docs"
 docs-serve = "cd docs && python3 -m http.server 8080"
 
 # Performance and quality
-benchmark = "pnpm run test:bench"
-coverage = "pnpm run test:coverage"
+benchmark = "pnpm run bench"
+coverage = "pnpm run coverage"
 all-checks = "mise run format && mise run lint && mise run check && mise run security && mise run license-check && mise run test && mise run build"
+
+# Act-based testing for examples
+test-examples = "cd examples && act -l && echo 'Use: act <event> -W .github/workflows/examples/<workflow>.yml'"
 
 # Release preparation
 changelog = "pnpm conventional-changelog -p conventionalcommits -i CHANGELOG.md -s"
-release-check = "mise run all-checks && mise run sbom && echo 'Release checks completed successfully'"
+release-check = "mise run all-checks && mise run benchmark && echo 'Release checks completed successfully'"
 
-# DevSecOps validation
-validate-devsecops = "./scripts/validate-devsecops.sh"
+# DevSecOps validation (NO SBOM - handled by CI only)
 security-audit = "pnpm audit --audit-level high && mise run security && mise run license-check"

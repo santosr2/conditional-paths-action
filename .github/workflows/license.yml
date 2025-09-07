@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
@@ -41,76 +41,36 @@ jobs:
           go install github.com/apache/skywalking-eyes/cmd/license-eye@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-      - name: Create .licenserc.yaml configuration
-        run: |
-          cat > .licenserc.yaml << 'EOF'
-          header:
-            license:
-              spdx-id: MIT
-              copyright-owner: conditional-paths-action contributors
-            paths:
-              - '**/*.ts'
-              - '**/*.js'
-              - '**/*.mjs'
-            paths-ignore:
-              - 'node_modules/**'
-              - 'dist/**'
-              - 'lib/**'
-              - 'coverage/**'
-              - '__tests__/**'
-              - '**/*.d.ts'
-              - '**/*.test.ts'
-              - '**/*.bench.ts'
-            comment: on-failure
-          dependency:
-            files:
-              - package.json
-          EOF
-
       - name: Check license headers
-        id: license-check
         run: |
           echo "Checking license headers in source files..."
           if license-eye header check; then
             echo "✅ All source files have proper license headers"
-            echo "headers-compliant=true" >> "$GITHUB_OUTPUT"
           else
             echo "❌ Some files are missing license headers"
-            echo "headers-compliant=false" >> "$GITHUB_OUTPUT"
-
-            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-              echo "This is a PR, will auto-fix headers"
-              license-eye header fix
-              echo "headers-fixed=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "This is not a PR, failing build"
-              exit 1
-            fi
-          fi
-
-      - name: Commit fixed license headers
-        if: steps.license-check.outputs.headers-fixed == 'true'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "License Header Bot"
-
-          if [[ -n $(git diff --name-only) ]]; then
-            git add -A
-            git commit -m "fix: add missing license headers
-
-            Co-authored-by: License Header Bot <action@github.com>"
-            git push
-            echo "✅ License headers have been automatically added and committed"
-          else
-            echo "No changes needed for license headers"
+            echo "::error::License headers are missing. Please run pre-commit hooks locally to fix them."
+            echo "::notice::Run 'mise run license-headers-fix' or ensure pre-commit hooks are enabled"
+            exit 1
           fi
 
   dependency-licenses:
-    name: Dependency License Audit
+    name: Dependency License Audit (Node.js ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
     steps:
       - name: Checkout code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@f2b2b233b538f500472c7274c7012f57857d8ce0 # v4.1.0
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
 
       - name: Setup mise
         uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
@@ -147,7 +107,7 @@ jobs:
       - name: Upload license report
         uses: actions/upload-artifact@de65e23aa2b7e23d713bb51fbfcb6d502f8667d8 # v4.6.2
         with:
-          name: license-report-${{ github.sha }}
+          name: license-report-${{ matrix.node-version }}-${{ github.sha }}
           path: license-report.md
           retention-days: 30
 

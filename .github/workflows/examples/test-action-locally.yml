@@ -1,0 +1,140 @@
+name: Test Action Locally (act)
+
+# This workflow can be run locally with act:
+# act -W .github/workflows/examples/test-action-locally.yml
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+
+jobs:
+  test-basic-filters:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Test basic path filtering
+        uses: ./
+        id: basic-filter
+        with:
+          filters: |
+            src:
+              - 'src/**'
+            tests:
+              - '__tests__/**'
+              - '*.test.ts'
+            docs:
+              - '*.md'
+              - 'docs/**'
+            workflows:
+              - '.github/workflows/**'
+
+      - name: Display basic results
+        run: |
+          {
+            echo "## Basic Filter Results"
+            echo "| Filter | Changed | Count |"
+            echo "|--------|---------|-------|"
+            echo "| Source | ${{ steps.basic-filter.outputs.src }} | ${{ steps.basic-filter.outputs.src_count }} |"
+            echo "| Tests | ${{ steps.basic-filter.outputs.tests }} | ${{ steps.basic-filter.outputs.tests_count }} |"
+            echo "| Docs | ${{ steps.basic-filter.outputs.docs }} | ${{ steps.basic-filter.outputs.docs_count }} |"
+            echo "| Workflows | ${{ steps.basic-filter.outputs.workflows }} | ${{ steps.basic-filter.outputs.workflows_count }} |"
+            echo ""
+            echo "**Changed filters:** ${{ steps.basic-filter.outputs.changes }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test-advanced-filters:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Test advanced path filtering with change types
+        uses: ./
+        id: advanced-filter
+        with:
+          list-files: json
+          predicate-quantifier: some
+          filters: |
+            src:
+              - added: 'src/lib/**'
+              - modified: 'src/**/*.ts'
+            tests:
+              - added: '__tests__/**'
+              - modified: '__tests__/**/*.ts'
+            docs:
+              - added|modified: '*.md'
+              - added|modified: 'docs/**'
+            workflows:
+              - added|modified: '.github/workflows/**'
+
+      - name: Display advanced results
+        run: |
+          {
+            echo "## Advanced Filter Results (with change types)"
+            echo "| Filter | Changed | Count | Files |"
+            echo "|--------|---------|-------|-------|"
+            echo "| Source | ${{ steps.advanced-filter.outputs.src }} | ${{ steps.advanced-filter.outputs.src_count }} | ${{ steps.advanced-filter.outputs.src_files }} |"
+            echo "| Tests | ${{ steps.advanced-filter.outputs.tests }} | ${{ steps.advanced-filter.outputs.tests_count }} | ${{ steps.advanced-filter.outputs.tests_files }} |"
+            echo "| Docs | ${{ steps.advanced-filter.outputs.docs }} | ${{ steps.advanced-filter.outputs.docs_count }} | ${{ steps.advanced-filter.outputs.docs_files }} |"
+            echo "| Workflows | ${{ steps.advanced-filter.outputs.workflows }} | ${{ steps.advanced-filter.outputs.workflows_count }} | ${{ steps.advanced-filter.outputs.workflows_files }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test-file-listing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Test file listing formats
+        uses: ./
+        id: file-list
+        with:
+          list-files: csv
+          filters: |
+            src:
+              - 'src/**'
+            docs:
+              - '*.md'
+              - 'docs/**'
+
+      - name: Show file listing
+        run: |
+          {
+            echo "## File Listing (CSV Format)"
+            echo "Source files: ${{ steps.file-list.outputs.src_files }}"
+            echo "Doc files: ${{ steps.file-list.outputs.docs_files }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test-every-quantifier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Test 'every' predicate quantifier
+        uses: ./
+        id: every-filter
+        with:
+          predicate-quantifier: every
+          filters: |
+            src:
+              - 'src/**'
+              - '__tests__/**'
+
+      - name: Display every quantifier results
+        run: |
+          {
+            echo "## Every Quantifier Results"
+            echo "Strict match (must have both src AND tests changes): ${{ steps.every-filter.outputs.src }}"
+          } >> "$GITHUB_STEP_SUMMARY"

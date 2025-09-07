@@ -1,0 +1,77 @@
+labels: ['question']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💡 Q&A Discussion
+
+        Ask questions about using conditional-paths-action, get help with configuration, or discuss best practices.
+
+        **Before asking:**
+        - Check the [documentation](https://santosr2.github.io/conditional-paths-action/docs/)
+        - Search [existing discussions](https://github.com/santosr2/conditional-paths-action/discussions)
+        - Review [examples](https://github.com/santosr2/conditional-paths-action/tree/main/examples)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: '❓ Your Question'
+      description: 'Describe your question or issue in detail'
+      placeholder: "I'm trying to configure filters for my monorepo..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: '🔧 Configuration & Context'
+      description: 'Share your current configuration, workflow setup, or relevant code'
+      placeholder: |
+        ```yaml
+        - uses: santosr2/conditional-paths-action@v1
+          with:
+            filters: |
+              frontend: 'apps/frontend/**'
+        ```
+      render: yaml
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: '✅ Expected Behavior'
+      description: 'What did you expect to happen?'
+      placeholder: 'I expected the frontend filter to trigger when...'
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: '❌ Actual Behavior'
+      description: 'What actually happened?'
+      placeholder: 'Instead, the action...'
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: '🌍 Environment'
+      description: 'What GitHub Actions runner are you using?'
+      options:
+        - ubuntu-latest
+        - ubuntu-22.04
+        - ubuntu-20.04
+        - windows-latest
+        - macos-latest
+        - self-hosted
+        - Other (please specify in context)
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: '📋 Checklist'
+      description: "Please confirm you've done the following:"
+      options:
+        - label: "I've read the documentation"
+        - label: "I've searched existing discussions"
+        - label: "I've provided a minimal example"
+        - label: "I've included my configuration"

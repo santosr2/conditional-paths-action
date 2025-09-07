@@ -53,6 +53,6 @@ export default defineConfig({
     pool: 'forks'
   },
   esbuild: {
-    target: 'es2022'
+    target: 'es2024'
   }
 })

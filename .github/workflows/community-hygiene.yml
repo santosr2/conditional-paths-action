@@ -1,0 +1,539 @@
+name: Community Hygiene Monitor
+
+on:
+  schedule:
+    # Run weekly to monitor community health
+    - cron: '0 9 * * 1' # Every Monday at 9 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  discussions: write
+  repository-projects: write
+
+concurrency:
+  group: community-hygiene
+  cancel-in-progress: false
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  discussions-hygiene:
+    name: Monitor Discussions Health
+    runs-on: ubuntu-latest
+    outputs:
+      discussions-report: ${{ steps.check-discussions.outputs.report }}
+      needs-attention: ${{ steps.check-discussions.outputs.needs-attention }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Check Discussions activity and health
+        id: check-discussions
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Define expected discussion categories
+            const expectedCategories = [
+              { name: 'Q&A', slug: 'q-a' },
+              { name: 'Ideas', slug: 'ideas' },
+              { name: 'Announcements', slug: 'announcements' },
+              { name: 'Show and Tell', slug: 'show-and-tell' }
+            ];
+
+            let report = `## 💬 Discussions Health Report\n\n`;
+            let needsAttention = false;
+
+            try {
+              // Get repository info to check if discussions are enabled
+              const { data: repoData } = await github.rest.repos.get({ owner, repo });
+
+              if (!repoData.has_discussions) {
+                report += `❌ **CRITICAL**: Discussions are not enabled for this repository!\n\n`;
+                needsAttention = true;
+                core.setOutput('report', report);
+                core.setOutput('needs-attention', 'true');
+                return;
+              }
+
+              // Get discussions data using GraphQL
+              const query = `
+                query($owner: String!, $repo: String!, $first: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    discussions(first: $first, orderBy: {field: CREATED_AT, direction: DESC}) {
+                      totalCount
+                      nodes {
+                        category {
+                          name
+                          slug
+                        }
+                        createdAt
+                        answerChosenAt
+                        comments {
+                          totalCount
+                        }
+                      }
+                    }
+                    discussionCategories(first: 10) {
+                      nodes {
+                        name
+                        slug
+                        discussionCount
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const variables = { owner, repo, first: 50 };
+              const result = await github.graphql(query, variables);
+
+              const discussions = result.repository.discussions;
+              const categories = result.repository.discussionCategories.nodes;
+
+              report += `### 📊 Overall Statistics\n`;
+              report += `- **Total Discussions**: ${discussions.totalCount}\n`;
+              report += `- **Available Categories**: ${categories.length}\n\n`;
+
+              // Check category usage
+              report += `### 📂 Category Analysis\n\n`;
+
+              const categoryStats = {};
+              categories.forEach(cat => {
+                categoryStats[cat.slug] = {
+                  name: cat.name,
+                  count: cat.discussionCount
+                };
+              });
+
+              // Analyze each expected category
+              for (const expectedCat of expectedCategories) {
+                const catData = categoryStats[expectedCat.slug];
+                if (!catData) {
+                  report += `❌ **Missing Category**: "${expectedCat.name}" (${expectedCat.slug})\n`;
+                  needsAttention = true;
+                } else {
+                  const status = catData.count === 0 ? '⚠️  Empty' : '✅ Active';
+                  report += `${status} **${catData.name}**: ${catData.count} discussions\n`;
+
+                  // Flag empty categories as needing attention
+                  if (catData.count === 0) {
+                    needsAttention = true;
+                  }
+                }
+              }
+
+              report += `\n`;
+
+              // Recent activity analysis (last 30 days)
+              const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+              const recentDiscussions = discussions.nodes.filter(d =>
+                new Date(d.createdAt) > thirtyDaysAgo
+              );
+
+              report += `### 📈 Recent Activity (Last 30 Days)\n`;
+              report += `- **New Discussions**: ${recentDiscussions.length}\n`;
+
+              if (recentDiscussions.length === 0) {
+                report += `⚠️  **No recent activity**: Consider promoting discussions or creating example content\n`;
+                needsAttention = true;
+              } else {
+                const byCategory = {};
+                recentDiscussions.forEach(d => {
+                  const catName = d.category.name;
+                  byCategory[catName] = (byCategory[catName] || 0) + 1;
+                });
+
+                report += `- **By Category**:\n`;
+                Object.entries(byCategory).forEach(([cat, count]) => {
+                  report += `  - ${cat}: ${count}\n`;
+                });
+              }
+
+              // Response rate analysis for Q&A
+              const qaDiscussions = discussions.nodes.filter(d =>
+                d.category.slug === 'q-a'
+              );
+
+              if (qaDiscussions.length > 0) {
+                const answeredCount = qaDiscussions.filter(d => d.answerChosenAt).length;
+                const responseRate = Math.round((answeredCount / qaDiscussions.length) * 100);
+
+                report += `\n### ❓ Q&A Health\n`;
+                report += `- **Response Rate**: ${responseRate}% (${answeredCount}/${qaDiscussions.length})\n`;
+
+                if (responseRate < 50) {
+                  report += `⚠️  **Low response rate**: Consider improving community engagement\n`;
+                  needsAttention = true;
+                } else if (responseRate >= 80) {
+                  report += `✅ **Excellent response rate**\n`;
+                }
+              }
+
+              // Recommendations
+              report += `\n### 💡 Recommendations\n`;
+
+              if (discussions.totalCount === 0) {
+                report += `- 📝 Create initial discussions to seed community engagement\n`;
+                report += `- 📢 Announce discussions feature in README\n`;
+                needsAttention = true;
+              }
+
+              if (recentDiscussions.length < 2) {
+                report += `- 🚀 Consider creating weekly discussion threads\n`;
+                report += `- 📣 Promote discussions in release notes\n`;
+              }
+
+              const emptyCategories = expectedCategories.filter(cat =>
+                categoryStats[cat.slug]?.count === 0
+              );
+
+              if (emptyCategories.length > 0) {
+                report += `- 🎯 Create example content for empty categories: ${emptyCategories.map(c => c.name).join(', ')}\n`;
+              }
+
+              report += `\n---\n*Generated: ${new Date().toISOString()}*\n`;
+
+            } catch (error) {
+              report += `❌ **Error checking discussions**: ${error.message}\n`;
+              needsAttention = true;
+            }
+
+            core.setOutput('report', report);
+            core.setOutput('needs-attention', needsAttention.toString());
+
+  project-board-hygiene:
+    name: Monitor Project Board Health
+    runs-on: ubuntu-latest
+    outputs:
+      project-report: ${{ steps.check-projects.outputs.report }}
+      needs-attention: ${{ steps.check-projects.outputs.needs-attention }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Check Project Board health
+        id: check-projects
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            let report = `## 📋 Project Board Health Report\n\n`;
+            let needsAttention = false;
+
+            try {
+              // Get repository projects (v2)
+              const query = `
+                query($owner: String!, $repo: String!) {
+                  repository(owner: $owner, name: $repo) {
+                    projectsV2(first: 10) {
+                      totalCount
+                      nodes {
+                        title
+                        url
+                        number
+                        createdAt
+                        updatedAt
+                        items {
+                          totalCount
+                        }
+                        fields(first: 20) {
+                          nodes {
+                            ... on ProjectV2SingleSelectField {
+                              name
+                              options {
+                                name
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const result = await github.graphql(query, { owner, repo });
+              const projects = result.repository.projectsV2.nodes;
+
+              report += `### 📊 Project Overview\n`;
+              report += `- **Total Projects**: ${projects.length}\n\n`;
+
+              if (projects.length === 0) {
+                report += `❌ **No project boards found**\n`;
+                report += `Consider creating a project board for better issue tracking\n\n`;
+                needsAttention = true;
+              } else {
+                // Analyze each project
+                for (const project of projects) {
+                  report += `### 📁 ${project.title}\n`;
+                  report += `- **URL**: ${project.url}\n`;
+                  report += `- **Items**: ${project.items.totalCount}\n`;
+                  report += `- **Last Updated**: ${new Date(project.updatedAt).toLocaleDateString()}\n`;
+
+                  // Check for staleness (no updates in 30 days)
+                  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                  const lastUpdated = new Date(project.updatedAt);
+
+                  if (lastUpdated < thirtyDaysAgo) {
+                    report += `⚠️  **Stale project**: No updates in ${Math.floor((Date.now() - lastUpdated) / (24 * 60 * 60 * 1000))} days\n`;
+                    needsAttention = true;
+                  }
+
+                  // Check for empty projects
+                  if (project.items.totalCount === 0) {
+                    report += `⚠️  **Empty project**: No items found\n`;
+                    needsAttention = true;
+                  }
+
+                  // Analyze status fields
+                  const statusFields = project.fields.nodes.filter(field =>
+                    field.name && field.name.toLowerCase().includes('status')
+                  );
+
+                  if (statusFields.length > 0) {
+                    report += `- **Status Options**: ${statusFields[0].options.map(opt => opt.name).join(', ')}\n`;
+                  }
+
+                  report += `\n`;
+                }
+              }
+
+              // Check for issues without project assignment
+              const { data: issues } = await github.rest.issues.listForRepo({
+                owner,
+                repo,
+                state: 'open',
+                per_page: 100
+              });
+
+              // Note: GitHub API v2 projects don't easily expose issue assignments
+              // This is a simplified check
+              const openIssuesCount = issues.length;
+
+              report += `### 📈 Issue Management\n`;
+              report += `- **Open Issues**: ${openIssuesCount}\n`;
+
+              if (projects.length > 0 && openIssuesCount > 0) {
+                report += `- **Recommendation**: Ensure open issues are tracked in project boards\n`;
+              }
+
+              // Check for automation configuration
+              const automationFiles = [
+                '.github/workflows/project-automation.yml',
+                '.github/project-automation.yml'
+              ];
+
+              let hasAutomation = false;
+              for (const file of automationFiles) {
+                try {
+                  await github.rest.repos.getContent({ owner, repo, path: file });
+                  hasAutomation = true;
+                  break;
+                } catch (error) {
+                  // File doesn't exist, continue
+                }
+              }
+
+              report += `\n### 🤖 Automation Status\n`;
+              if (hasAutomation) {
+                report += `✅ **Project automation detected**\n`;
+              } else {
+                report += `⚠️  **No project automation found**\n`;
+                report += `Consider setting up automated issue/PR management\n`;
+                needsAttention = true;
+              }
+
+              // Recommendations
+              report += `\n### 💡 Recommendations\n`;
+
+              if (projects.length === 0) {
+                report += `- 📋 Create a project board with basic workflow columns (To Do, In Progress, Done)\n`;
+                report += `- 🔗 Link issues and PRs to project automatically\n`;
+              } else if (projects.some(p => p.items.totalCount === 0)) {
+                report += `- 📝 Add existing issues to empty project boards\n`;
+                report += `- 🔄 Set up automation to add new issues automatically\n`;
+              }
+
+              const staleProjects = projects.filter(p =>
+                new Date(p.updatedAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+              );
+
+              if (staleProjects.length > 0) {
+                report += `- 🔄 Review and update stale projects: ${staleProjects.map(p => p.title).join(', ')}\n`;
+              }
+
+              report += `\n---\n*Generated: ${new Date().toISOString()}*\n`;
+
+            } catch (error) {
+              report += `❌ **Error checking project boards**: ${error.message}\n`;
+              needsAttention = true;
+            }
+
+            core.setOutput('report', report);
+            core.setOutput('needs-attention', needsAttention.toString());
+
+  create-hygiene-report:
+    name: Create Community Health Report
+    runs-on: ubuntu-latest
+    needs: [discussions-hygiene, project-board-hygiene]
+    if: always()
+    steps:
+      - name: Create comprehensive report
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const discussionsReport = `${{ needs.discussions-hygiene.outputs.discussions-report }}`;
+            const projectReport = `${{ needs.project-board-hygiene.outputs.project-report }}`;
+            const discussionsNeedAttention = `${{ needs.discussions-hygiene.outputs.needs-attention }}` === 'true';
+            const projectsNeedAttention = `${{ needs.project-board-hygiene.outputs.needs-attention }}` === 'true';
+
+            const fullReport = `# 🏥 Community Health Report
+
+            This report provides insights into the health and activity of our community infrastructure.
+
+            ${discussionsReport}
+
+            ${projectReport}
+
+            ## 🎯 Action Items Summary
+
+            ${discussionsNeedAttention || projectsNeedAttention ?
+              '**Attention Required**: Some community infrastructure needs maintenance.' :
+              '✅ **All Good**: Community infrastructure is healthy!'
+            }
+
+            ${discussionsNeedAttention ? '- Review discussions setup and engagement' : ''}
+            ${projectsNeedAttention ? '- Review project board organization and automation' : ''}
+
+            ---
+
+            This report is automatically generated weekly. View the workflow at \`.github/workflows/community-hygiene.yml\`.
+            `;
+
+            // Create or update an issue with the report
+            const title = `Community Health Report - ${new Date().toISOString().split('T')[0]}`;
+            const labels = ['community', 'report'];
+
+            if (discussionsNeedAttention || projectsNeedAttention) {
+              labels.push('needs-attention');
+            }
+
+            // Check if there's already an open community health issue
+            const { data: existingIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'community,report',
+              per_page: 5
+            });
+
+            if (existingIssues.length > 0) {
+              // Update existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssues[0].number,
+                body: fullReport
+              });
+
+              console.log(`Updated existing community health issue #${existingIssues[0].number}`);
+            } else {
+              // Create new issue if attention is needed
+              if (discussionsNeedAttention || projectsNeedAttention) {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: title,
+                  body: fullReport,
+                  labels: labels
+                });
+
+                console.log('Created new community health issue');
+              } else {
+                console.log('Community health is good, no issue created');
+              }
+            }
+
+            // Output summary for job summary
+            core.summary.addHeading('Community Health Monitor Results');
+            core.summary.addRaw(discussionsNeedAttention || projectsNeedAttention ?
+              '⚠️ **Attention needed** - Some community infrastructure requires maintenance' :
+              '✅ **All healthy** - Community infrastructure is functioning well'
+            );
+            core.summary.write();
+
+  repository-metrics:
+    name: Collect Repository Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect and display metrics
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+
+            // Get repository data
+            const { data: repoData } = await github.rest.repos.get({ owner, repo });
+
+            // Get recent activity metrics
+            const { data: commits } = await github.rest.repos.listCommits({
+              owner, repo, per_page: 100
+            });
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner, repo, state: 'all', per_page: 100
+            });
+
+            const { data: prs } = await github.rest.pulls.list({
+              owner, repo, state: 'all', per_page: 100
+            });
+
+            // Calculate metrics
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+            const recentCommits = commits.filter(c =>
+              new Date(c.commit.author.date) > thirtyDaysAgo
+            ).length;
+
+            const recentIssues = issues.filter(i =>
+              new Date(i.created_at) > thirtyDaysAgo
+            ).length;
+
+            const recentPRs = prs.filter(pr =>
+              new Date(pr.created_at) > thirtyDaysAgo
+            ).length;
+
+            console.log(`Repository Metrics for ${owner}/${repo}:`);
+            console.log(`- Stars: ${repoData.stargazers_count}`);
+            console.log(`- Forks: ${repoData.forks_count}`);
+            console.log(`- Watchers: ${repoData.watchers_count}`);
+            console.log(`- Open Issues: ${repoData.open_issues_count}`);
+            console.log(`- Recent Commits (30d): ${recentCommits}`);
+            console.log(`- Recent Issues (30d): ${recentIssues}`);
+            console.log(`- Recent PRs (30d): ${recentPRs}`);
+
+            // Add to job summary
+            core.summary.addHeading('Repository Metrics');
+            core.summary.addTable([
+              [{data: 'Metric', header: true}, {data: 'Value', header: true}],
+              ['⭐ Stars', repoData.stargazers_count.toString()],
+              ['🍴 Forks', repoData.forks_count.toString()],
+              ['👀 Watchers', repoData.watchers_count.toString()],
+              ['🐛 Open Issues', repoData.open_issues_count.toString()],
+              ['📝 Recent Commits (30d)', recentCommits.toString()],
+              ['🎫 Recent Issues (30d)', recentIssues.toString()],
+              ['🔀 Recent PRs (30d)', recentPRs.toString()]
+            ]);
+            core.summary.write();

@@ -1,0 +1,377 @@
+name: Project Board Automation
+
+on:
+  issues:
+    types: [opened, closed, reopened, labeled, unlabeled]
+  pull_request:
+    types: [opened, closed, reopened, ready_for_review, converted_to_draft]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  repository-projects: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Set your project number here - update this to match your actual project
+  PROJECT_NUMBER: 1 # Update this to your project board number
+  FORCE_COLOR: 1
+
+jobs:
+  manage-project-items:
+    name: Manage Project Board Items
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue to project
+        if: github.event_name == 'issues' && github.event.action == 'opened'
+        uses: actions/add-to-project@28b7c8b5be0e00c5bf3a1977db595b6c31d95424 # v1.2.0
+        with:
+          project-url:
+            https://github.com/users/${{ github.repository_owner }}/projects/${{ env.PROJECT_NUMBER
+            }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add PR to project
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        uses: actions/add-to-project@28b7c8b5be0e00c5bf3a1977db595b6c31d95424 # v1.2.0
+        with:
+          project-url:
+            https://github.com/users/${{ github.repository_owner }}/projects/${{ env.PROJECT_NUMBER
+            }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Move items based on status
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const projectNumber = process.env.PROJECT_NUMBER;
+            const owner = context.repo.owner;
+
+            // Determine the item and its status
+            let itemNumber, itemType, newStatus;
+
+            if (context.eventName === 'issues') {
+              itemNumber = context.payload.issue.number;
+              itemType = 'Issue';
+
+              switch (context.payload.action) {
+                case 'opened':
+                  newStatus = 'Todo';
+                  break;
+                case 'closed':
+                  newStatus = context.payload.issue.state_reason === 'completed' ? 'Done' : 'Cancelled';
+                  break;
+                case 'reopened':
+                  newStatus = 'Todo';
+                  break;
+                case 'labeled':
+                  // Move to "In Progress" if labeled with in-progress related labels
+                  const progressLabels = ['in progress', 'working on it', 'investigating'];
+                  if (progressLabels.some(label =>
+                    context.payload.label?.name.toLowerCase().includes(label))) {
+                    newStatus = 'In Progress';
+                  }
+                  break;
+              }
+            } else if (context.eventName === 'pull_request') {
+              itemNumber = context.payload.pull_request.number;
+              itemType = 'Pull Request';
+
+              switch (context.payload.action) {
+                case 'opened':
+                  newStatus = 'In Progress';
+                  break;
+                case 'ready_for_review':
+                  newStatus = 'In Review';
+                  break;
+                case 'converted_to_draft':
+                  newStatus = 'In Progress';
+                  break;
+                case 'closed':
+                  newStatus = context.payload.pull_request.merged ? 'Done' : 'Cancelled';
+                  break;
+                case 'reopened':
+                  newStatus = 'In Progress';
+                  break;
+              }
+            } else if (context.eventName === 'pull_request_review') {
+              itemNumber = context.payload.pull_request.number;
+              itemType = 'Pull Request';
+
+              if (context.payload.review.state === 'approved') {
+                newStatus = 'Ready to Merge';
+              } else if (context.payload.review.state === 'changes_requested') {
+                newStatus = 'In Progress';
+              }
+            }
+
+            if (!newStatus) {
+              console.log('No status change needed for this event');
+              return;
+            }
+
+            console.log(`Processing ${itemType} #${itemNumber}: ${context.payload.action} -> ${newStatus}`);
+
+            try {
+              // GraphQL mutation to update project item status
+              const mutation = `
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
+                  updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: { singleSelectOptionId: $value }
+                    }
+                  ) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+
+              // First, we need to get the project ID and find the item
+              const projectQuery = `
+                query($owner: String!, $projectNumber: Int!) {
+                  user(login: $owner) {
+                    projectV2(number: $projectNumber) {
+                      id
+                      items(first: 100) {
+                        nodes {
+                          id
+                          content {
+                            ... on Issue {
+                              number
+                            }
+                            ... on PullRequest {
+                              number
+                            }
+                          }
+                        }
+                      }
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const projectData = await github.graphql(projectQuery, {
+                owner: owner,
+                projectNumber: parseInt(projectNumber)
+              });
+
+              const project = projectData.user?.projectV2;
+              if (!project) {
+                console.log(`Project ${projectNumber} not found for user ${owner}`);
+                return;
+              }
+
+              // Find the project item
+              const projectItem = project.items.nodes.find(item =>
+                item.content?.number === itemNumber
+              );
+
+              if (!projectItem) {
+                console.log(`${itemType} #${itemNumber} not found in project`);
+                return;
+              }
+
+              // Find the status field and option
+              const statusField = project.fields.nodes.find(field =>
+                field.name && field.name.toLowerCase() === 'status'
+              );
+
+              if (!statusField) {
+                console.log('Status field not found in project');
+                return;
+              }
+
+              const statusOption = statusField.options.find(option =>
+                option.name.toLowerCase() === newStatus.toLowerCase() ||
+                option.name.toLowerCase().includes(newStatus.toLowerCase())
+              );
+
+              if (!statusOption) {
+                console.log(`Status option "${newStatus}" not found. Available options: ${statusField.options.map(o => o.name).join(', ')}`);
+                return;
+              }
+
+              // Update the item status
+              await github.graphql(mutation, {
+                projectId: project.id,
+                itemId: projectItem.id,
+                fieldId: statusField.id,
+                value: statusOption.id
+              });
+
+              console.log(`✅ Updated ${itemType} #${itemNumber} status to "${statusOption.name}"`);
+
+            } catch (error) {
+              console.error('Error updating project item:', error);
+              // Don't fail the workflow for project management issues
+            }
+
+  auto-assign-reviewers:
+    name: Auto-assign PR Reviewers
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    steps:
+      - name: Request reviews from maintainers
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+
+            // Don't request review from the author
+            const maintainers = ['santosr2'].filter(user => user !== author);
+
+            if (maintainers.length > 0) {
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  reviewers: maintainers
+                });
+
+                console.log(`Requested reviews from: ${maintainers.join(', ')}`);
+              } catch (error) {
+                console.log('Could not request reviewers:', error.message);
+              }
+            }
+
+  milestone-management:
+    name: Milestone Management
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'labeled'
+    steps:
+      - name: Add to milestone based on labels
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            const label = context.payload.label;
+
+            // Define milestone mapping
+            const labelToMilestone = {
+              'breaking-change': 'v2.0.0',
+              'enhancement': 'Next Release',
+              'bug': 'Next Release',
+              'priority:high': 'Next Release',
+              'security': 'Security Fix'
+            };
+
+            const targetMilestone = labelToMilestone[label.name];
+
+            if (targetMilestone && !issue.milestone) {
+              try {
+                // Get or create milestone
+                const { data: milestones } = await github.rest.issues.listMilestones({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'open'
+                });
+
+                let milestone = milestones.find(m => m.title === targetMilestone);
+
+                if (!milestone) {
+                  // Create milestone if it doesn't exist
+                  const { data: newMilestone } = await github.rest.issues.createMilestone({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    title: targetMilestone,
+                    description: `Automatically created milestone for ${targetMilestone}`
+                  });
+                  milestone = newMilestone;
+                }
+
+                // Add issue to milestone
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  milestone: milestone.number
+                });
+
+                console.log(`Added issue #${issue.number} to milestone "${targetMilestone}"`);
+
+              } catch (error) {
+                console.log('Error managing milestone:', error.message);
+              }
+            }
+
+  link-related-items:
+    name: Link Related Issues and PRs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    steps:
+      - name: Find and link related issues
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+            const title = pr.title || '';
+
+            // Extract issue references from PR body and title
+            const issueRegex = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)|#(\d+)/gi;
+            const matches = [...(body + ' ' + title).matchAll(issueRegex)];
+
+            const referencedIssues = new Set();
+            matches.forEach(match => {
+              const issueNumber = match[1] || match[2];
+              if (issueNumber) {
+                referencedIssues.add(parseInt(issueNumber));
+              }
+            });
+
+            if (referencedIssues.size > 0) {
+              console.log(`Found references to issues: ${Array.from(referencedIssues).join(', ')}`);
+
+              // Add a comment linking the issues if they're not explicitly mentioned
+              const explicitlyMentioned = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+/i.test(body);
+
+              if (!explicitlyMentioned && referencedIssues.size > 0) {
+                const linkedIssues = Array.from(referencedIssues).map(num => `#${num}`).join(', ');
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `🔗 **Related Issues**: ${linkedIssues}\n\n*This PR appears to reference the above issues. Consider using "fixes #issue" or "closes #issue" syntax to automatically close them when this PR is merged.*`
+                });
+              }
+            } else {
+              // PR doesn't reference any issues - suggest linking
+              if (!title.startsWith('chore:') && !title.startsWith('docs:')) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `🔍 **No linked issues found**\n\nThis PR doesn't appear to reference any issues. Consider:\n\n1. Linking to an existing issue using "fixes #123" or "closes #123"\n2. Creating an issue first if this addresses a new problem\n\n*Note: This check is automatically skipped for \`chore:\` and \`docs:\` PRs.*`
+                });
+              }
+            }

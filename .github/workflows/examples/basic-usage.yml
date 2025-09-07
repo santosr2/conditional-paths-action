@@ -1,0 +1,102 @@
+name: 'Example: Basic Usage'
+
+# This workflow demonstrates basic usage of conditional-paths-action
+# Test locally with: act push -W .github/workflows/examples/basic-usage.yml
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    name: 'Detect File Changes'
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.changes.outputs.src }}
+      tests: ${{ steps.changes.outputs.tests }}
+      docs: ${{ steps.changes.outputs.docs }}
+      workflow: ${{ steps.changes.outputs.workflow }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        uses: ./
+        id: changes
+        with:
+          filters: |
+            src:
+              - 'src/**/*.{ts,tsx,js,jsx}'
+              - 'lib/**'
+              - '*.{ts,js}'
+            tests:
+              - '__tests__/**'
+              - '**/*.test.{ts,js}'
+              - '**/*.spec.{ts,js}'
+            docs:
+              - 'docs/**'
+              - '*.md'
+            workflow:
+              - '.github/**'
+              - 'package.json'
+              - 'tsconfig*.json'
+
+      - name: Print detected changes
+        run: |
+          echo "Source changed: ${{ steps.changes.outputs.src }}"
+          echo "Tests changed: ${{ steps.changes.outputs.tests }}"
+          echo "Docs changed: ${{ steps.changes.outputs.docs }}"
+          echo "Workflow changed: ${{ steps.changes.outputs.workflow }}"
+
+  source-build:
+    name: 'Build Source'
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.src == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build source
+        run: echo "Building source because source files changed"
+
+  run-tests:
+    name: 'Run Tests'
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.tests == 'true' || needs.detect-changes.outputs.src == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: echo "Running tests because test files or source files changed"
+
+  docs-publish:
+    name: 'Publish Documentation'
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish docs
+        run: echo "Publishing docs because documentation changed"
+
+  workflow-validate:
+    name: 'Validate Workflow'
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.workflow == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate workflow
+        run: echo "Validating workflow because workflow files changed"
