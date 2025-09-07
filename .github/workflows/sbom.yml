@@ -78,16 +78,13 @@ jobs:
         run: |
           echo "Generating SBOM for Node.js ${{ matrix.node-version }}..."
 
-          # Install CycloneDX generator
-          npm install -g @cyclonedx/cyclonedx-npm@latest
-
-          # Generate SBOM with comprehensive metadata
-          cyclonedx-npm \
-            --output-format json \
-            --output-file sbom-node${{ matrix.node-version }}.json \
-            --spec-version 1.4 \
-            --flatten-components true \
-            --short-PURLs false
+          # Use cdxgen which has better pnpm support
+          npx -y @cyclonedx/cdxgen@latest \
+            -o sbom-node${{ matrix.node-version }}.json \
+            --spec-version 1.6 \
+            -t javascript \
+            --no-include-formulation \
+            .
 
           # Validate SBOM format
           if ! jq empty sbom-node${{ matrix.node-version }}.json; then
@@ -130,11 +127,13 @@ jobs:
         run: |
           echo "Generating SPDX format SBOM for Node.js ${{ matrix.node-version }}..."
 
-          # Install SPDX tools
-          npm install -g spdx-sbom-generator@latest
-
-          # Generate SPDX SBOM
-          spdx-sbom-generator -p . -o spdx-sbom-node${{ matrix.node-version }}.json || {
+          # Use cdxgen to generate SPDX format (it supports both CycloneDX and SPDX)
+          npx -y @cyclonedx/cdxgen@latest \
+            -o spdx-sbom-node${{ matrix.node-version }}.json \
+            --spec-version 2.3 \
+            -t javascript \
+            --format spdx \
+            . || {
             echo "⚠️ SPDX generation failed, continuing with CycloneDX only"
             echo '{}' > spdx-sbom-node${{ matrix.node-version }}.json
           }
