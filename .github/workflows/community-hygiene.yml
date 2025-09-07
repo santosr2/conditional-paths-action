@@ -32,7 +32,7 @@ jobs:
 
       - name: Check Discussions activity and health
         id: check-discussions
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -220,7 +220,7 @@ jobs:
 
       - name: Check Project Board health
         id: check-projects
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -389,7 +389,7 @@ jobs:
     if: always()
     steps:
       - name: Create comprehensive report
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -478,7 +478,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Collect and display metrics
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
