@@ -454,6 +454,7 @@ jobs:
             const fs = require('fs');
 
             let comment = '## ⚡ Performance Analysis Results\n\n';
+            comment += '<!-- performance-bot-comment -->\n\n';  // Unique identifier for finding this comment
 
             // Load performance data for both Node versions
             let node22Data, node24Data;
@@ -500,10 +501,33 @@ jobs:
             comment += '- **Regression Alert**: > 5% increase\n\n';
             comment += '*Performance data updated on every commit. [View detailed reports →](https://santosr2.github.io/conditional-paths-action/performance/)*';
 
-            // Post comment
-            await github.rest.issues.createComment({
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: comment
+              issue_number: context.payload.pull_request.number
             });
+
+            const botComment = comments.find(comment =>
+              comment.body.includes('<!-- performance-bot-comment -->')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+              console.log('✅ Updated existing performance comment');
+            } else {
+              // Create new comment only if none exists
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: comment
+              });
+              console.log('✅ Created new performance comment');
+            }

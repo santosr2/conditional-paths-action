@@ -130,6 +130,8 @@ jobs:
   check-linked-issue:
     name: Check Linked Issue
     runs-on: ubuntu-latest
+    # Only run on PR opening or when PR title/body is edited
+    if: github.event.action == 'opened' || github.event.action == 'edited'
     steps:
       - name: Check if PR has linked issue
         uses: actions/github-script@v7.0.1
@@ -156,11 +158,11 @@ jobs:
                 issue_number: context.payload.pull_request.number,
                 body: `⚠️ **Missing Linked Issue**
 
-                This PR doesn't appear to be linked to an issue. For better tracking, please:
+            This PR doesn't appear to be linked to an issue. For better tracking, please:
 
-                1. Link this PR to an existing issue using keywords like "fixes #123" or "closes #123"
-                2. Or create a new issue first if this addresses a new problem
+            1. Link this PR to an existing issue using keywords like "fixes #123" or "closes #123"
+            2. Or create a new issue first if this addresses a new problem
 
-                *Note: This check is automatically skipped for \`chore:\` and \`docs:\` PRs.*`
+            *Note: This check is automatically skipped for \`chore:\` and \`docs:\` PRs.*`
               });
             }
