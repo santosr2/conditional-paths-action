@@ -85,7 +85,6 @@ jobs:
           cyclonedx-npm \
             --output-format json \
             --output-file sbom-node${{ matrix.node-version }}.json \
-            --include-dev false \
             --include-optional false \
             --spec-version 1.4 \
             --flatten-components true \

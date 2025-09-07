@@ -3,108 +3,127 @@
 
 # Source Code Changes
 'area:core':
-  - 'src/lib/**'
-  - 'src/main.ts'
+  - changed-files:
+      - 'src/lib/**'
+      - 'src/main.ts'
 
 'area:types':
-  - 'src/file.ts'
-  - 'src/**/*.ts'
-  - 'types/**'
+  - changed-files:
+      - 'src/file.ts'
+      - 'src/**/*.ts'
+      - 'types/**'
 
 'area:tests':
-  - '__tests__/**'
-  - '**/*.test.ts'
-  - '**/*.spec.ts'
-  - 'vitest.config.ts'
+  - changed-files:
+      - '__tests__/**'
+      - '**/*.test.ts'
+      - '**/*.spec.ts'
+      - 'vitest.config.ts'
 
 'area:benchmarks':
-  - '**/*.bench.ts'
-  - 'benchmarks/**'
+  - changed-files:
+      - '**/*.bench.ts'
+      - 'benchmarks/**'
 
 # Infrastructure & DevOps
 'area:ci':
-  - '.github/workflows/**'
-  - '.github/actions/**'
+  - changed-files:
+      - '.github/workflows/**'
+      - '.github/actions/**'
 
 'area:build':
-  - 'package.json'
-  - 'pnpm-lock.yaml'
-  - 'tsconfig*.json'
-  - 'dist/**'
-  - 'scripts/**'
-  - '.vercel/**'
+  - changed-files:
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig*.json'
+      - 'dist/**'
+      - 'scripts/**'
+      - '.vercel/**'
 
 'area:security':
-  - '.github/workflows/security.yml'
-  - '.github/workflows/codeql.yml'
-  - '.gitleaks.toml'
-  - 'SECURITY.md'
+  - changed-files:
+      - '.github/workflows/security.yml'
+      - '.github/workflows/codeql.yml'
+      - '.gitleaks.toml'
+      - 'SECURITY.md'
 
 'area:deps':
-  - 'package.json'
-  - 'pnpm-lock.yaml'
+  - changed-files:
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 # Documentation
 'area:docs':
-  - '**/*.md'
-  - 'docs/**'
-  - '.github/ISSUE_TEMPLATE/**'
-  - '.github/PULL_REQUEST_TEMPLATE/**'
-  - 'CONTRIBUTING.md'
-  - 'SECURITY.md'
-  - 'CONTRIBUTORS.md'
+  - changed-files:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE/**'
+      - 'CONTRIBUTING.md'
+      - 'SECURITY.md'
+      - 'CONTRIBUTORS.md'
 
 'area:examples':
-  - 'examples/**'
-  - '.github/workflows/examples/**'
+  - changed-files:
+      - 'examples/**'
+      - '.github/workflows/examples/**'
 
 # Configuration
 'area:config':
-  - '.github/**'
-  - '.gitignore'
-  - '.prettierrc'
-  - '.eslintrc*'
-  - 'mise.toml'
-  - '.mise.toml'
-  - '.pre-commit-config.yaml'
+  - changed-files:
+      - '.github/**'
+      - '.gitignore'
+      - '.prettierrc'
+      - '.eslintrc*'
+      - 'mise.toml'
+      - '.mise.toml'
+      - '.pre-commit-config.yaml'
 
 'area:license':
-  - 'LICENSE'
-  - '.github/workflows/license.yml'
+  - changed-files:
+      - 'LICENSE'
+      - '.github/workflows/license.yml'
 
 # Release & Distribution
 'area:release':
-  - '.github/workflows/release.yml'
-  - 'CHANGELOG.md'
-  - 'action.yml'
+  - changed-files:
+      - '.github/workflows/release.yml'
+      - 'CHANGELOG.md'
+      - 'action.yml'
 
 'area:sbom':
-  - 'scripts/generate-sbom.js'
-  - 'dist/sbom.json'
+  - changed-files:
+      - 'scripts/generate-sbom.js'
+      - 'dist/sbom.json'
 
 # Priority Labels
 'priority:high':
-  - 'SECURITY.md'
-  - 'src/lib/action.ts'
-  - 'action.yml'
+  - changed-files:
+      - 'SECURITY.md'
+      - 'src/lib/action.ts'
+      - 'action.yml'
 
 'priority:low':
-  - '**/*.md'
-  - 'docs/**'
-  - 'examples/**'
+  - changed-files:
+      - '**/*.md'
+      - 'docs/**'
+      - 'examples/**'
 
 # Breaking Changes Indicators
 'breaking-change':
-  - 'action.yml' # Changes to action interface
-  - 'src/lib/filter.ts' # Core filter logic changes
+  - changed-files:
+      - 'action.yml' # Changes to action interface
+      - 'src/lib/filter.ts' # Core filter logic changes
 
 # Needs Review Labels
 'needs:security-review':
-  - '.github/workflows/**'
-  - 'src/**/*.ts'
-  - 'scripts/**'
+  - changed-files:
+      - '.github/workflows/**'
+      - 'src/**/*.ts'
+      - 'scripts/**'
 
 'needs:docs-update':
-  - 'action.yml'
-  - 'src/lib/**'
-  - 'package.json'
+  - changed-files:
+      - 'action.yml'
+      - 'src/lib/**'
+      - 'package.json'
