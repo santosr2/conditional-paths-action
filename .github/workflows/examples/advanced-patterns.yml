@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
 
@@ -127,7 +127,7 @@ jobs:
     if: needs.advanced-filtering.outputs.security == 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Run security scan
         run: echo "🔒 Running enhanced security scan for security-sensitive changes"
 
@@ -138,7 +138,7 @@ jobs:
     if: needs.advanced-filtering.outputs.performance == 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Run performance tests
         run: echo "⚡ Running performance tests for performance-critical changes"
 
@@ -151,7 +151,7 @@ jobs:
       needs.advanced-filtering.outputs.rebuild == 'false'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Run quick tests
         run: echo "🚀 Running quick test suite (tests only, no rebuild needed)"
 
@@ -165,7 +165,7 @@ jobs:
       needs.advanced-filtering.outputs.features == 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Run full CI
         run: echo "🏗️ Running full CI pipeline (rebuild, all tests, integration)"
 

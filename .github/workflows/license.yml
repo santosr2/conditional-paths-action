@@ -34,7 +34,7 @@ jobs:
       - name: Setup Go for license tooling
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         with:
-          go-version: '1.21'
+          go-version: '1.24'
 
       - name: Install skywalking-eyes license checker
         run: |
