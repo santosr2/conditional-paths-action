@@ -1,0 +1,189 @@
+name: 'Example: Advanced Filter Patterns'
+
+# This workflow demonstrates advanced filtering capabilities
+# Test locally with: act push -W .github/workflows/examples/advanced-patterns.yml
+
+on:
+  push:
+    branches: [main, 'feature/**', 'fix/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  advanced-filtering:
+    name: 'Advanced Pattern Matching'
+    runs-on: ubuntu-latest
+    outputs:
+      # Change type specific filters
+      features: ${{ steps.changes.outputs.features }}
+      bugfixes: ${{ steps.changes.outputs.bugfixes }}
+      breaking: ${{ steps.changes.outputs.breaking }}
+
+      # Content-based filters
+      security: ${{ steps.changes.outputs.security }}
+      performance: ${{ steps.changes.outputs.performance }}
+
+      # Complex combinations
+      frontend: ${{ steps.changes.outputs.frontend }}
+      rebuild: ${{ steps.changes.outputs.rebuild }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Advanced pattern detection
+        uses: ./
+        id: changes
+        with:
+          list-files: shell
+          predicate-quantifier: some # At least one pattern must match
+          filters: |
+            # Detect new features (added files in feature areas)
+            features:
+              - added: 'src/features/**'
+              - added: 'src/components/**'
+              - added: 'src/pages/**'
+              - added: 'src/hooks/**'
+
+            # Detect bug fixes (modified files with test additions)
+            bugfixes:
+              - modified: 'src/**/*.{ts,tsx,js,jsx}'
+              - added: '**/*.test.{ts,tsx,js,jsx}'
+              - added: '**/*.spec.{ts,tsx,js,jsx}'
+
+            # Breaking changes (API modifications)
+            breaking:
+              - modified: 'src/api/**'
+              - modified: 'src/types/**'
+              - modified: 'packages/*/src/index.{ts,js}'
+              - deleted: 'src/**/*.{ts,tsx,js,jsx}'
+
+            # Security-sensitive files
+            security:
+              - '**/*auth*/**'
+              - '**/*security*/**'
+              - '**/*crypto*/**'
+              - '**/permissions/**'
+              - '**/*.env*'
+              - '**/secrets/**'
+              - 'src/lib/auth/**'
+
+            # Performance-critical code
+            performance:
+              - 'src/lib/performance/**'
+              - 'src/hooks/performance/**'
+              - '**/*performance*/**'
+              - '**/*optimization*/**'
+              - 'src/utils/cache/**'
+              - 'webpack*.config.*'
+              - 'vite*.config.*'
+              - 'rollup*.config.*'
+
+            # Frontend tests only (no source changes)
+            frontend:
+              - 'src/**/*.test.{ts,tsx}'
+              - 'src/**/*.spec.{ts,tsx}'
+              - '__tests__/**'
+              - 'tests/**'
+              - '!src/**/*.{ts,tsx}'  # Exclude source files
+              - '!src/**/!(*.test|*.spec).{ts,tsx}'  # Complex negation
+
+            # Full rebuild triggers
+            rebuild:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'pnpm-lock.yaml'
+              - 'yarn.lock'
+              - 'tsconfig*.json'
+              - 'webpack*.config.*'
+              - 'vite*.config.*'
+              - '.babelrc*'
+              - 'babel.config.*'
+              - 'tailwind.config.*'
+              - 'postcss.config.*'
+
+      - name: Display advanced detection results
+        run: |
+          echo "=== CHANGE TYPE ANALYSIS ==="
+          echo "New Features: ${{ steps.changes.outputs.features }}"
+          echo "Bug Fixes: ${{ steps.changes.outputs.bugfixes }}"
+          echo "Breaking Changes: ${{ steps.changes.outputs.breaking }}"
+          echo ""
+          echo "=== CONTENT ANALYSIS ==="
+          echo "Security Sensitive: ${{ steps.changes.outputs.security }}"
+          echo "Performance Critical: ${{ steps.changes.outputs.performance }}"
+          echo ""
+          echo "=== BUILD STRATEGY ==="
+          echo "Frontend Tests Only: ${{ steps.changes.outputs.frontend }}"
+          echo "Full Rebuild Needed: ${{ steps.changes.outputs.rebuild }}"
+
+  security-scan:
+    name: 'Security Scan'
+    runs-on: ubuntu-latest
+    needs: advanced-filtering
+    if: needs.advanced-filtering.outputs.security == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run security scan
+        run: echo "🔒 Running enhanced security scan for security-sensitive changes"
+
+  performance-test:
+    name: 'Performance Tests'
+    runs-on: ubuntu-latest
+    needs: advanced-filtering
+    if: needs.advanced-filtering.outputs.performance == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run performance tests
+        run: echo "⚡ Running performance tests for performance-critical changes"
+
+  quick-test:
+    name: 'Quick Test Suite'
+    runs-on: ubuntu-latest
+    needs: advanced-filtering
+    if: |
+      needs.advanced-filtering.outputs.frontend == 'true' &&
+      needs.advanced-filtering.outputs.rebuild == 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run quick tests
+        run: echo "🚀 Running quick test suite (tests only, no rebuild needed)"
+
+  full-ci:
+    name: 'Full CI Pipeline'
+    runs-on: ubuntu-latest
+    needs: advanced-filtering
+    if: |
+      needs.advanced-filtering.outputs.rebuild == 'true' ||
+      needs.advanced-filtering.outputs.breaking == 'true' ||
+      needs.advanced-filtering.outputs.features == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run full CI
+        run: echo "🏗️ Running full CI pipeline (rebuild, all tests, integration)"
+
+  notification:
+    name: 'Smart Notifications'
+    runs-on: ubuntu-latest
+    needs: [advanced-filtering, security-scan, performance-test, quick-test, full-ci]
+    if: always()
+    steps:
+      - name: Send smart notifications
+        run: |
+          echo "📊 PIPELINE SUMMARY"
+          if [[ "${{ needs.advanced-filtering.outputs.breaking }}" == "true" ]]; then
+            echo "⚠️  Breaking changes detected - review required"
+          fi
+          if [[ "${{ needs.advanced-filtering.outputs.security }}" == "true" ]]; then
+            echo "🔒 Security-sensitive changes - security team notified"
+          fi
+          if [[ "${{ needs.advanced-filtering.outputs.performance }}" == "true" ]]; then
+            echo "⚡ Performance-critical changes - performance tests executed"
+          fi

@@ -24,12 +24,11 @@
     "test:e2e": "vitest run __tests__/e2e.test.ts",
     "bench": "vitest bench",
     "coverage": "vitest run --coverage",
-    "package": "pnpm run build && ncc build lib/main.js -o dist --source-map --license licenses.txt --minify && pnpm run sbom",
+    "package": "pnpm run build && ncc build lib/main.js -o dist --source-map --license licenses.txt --minify",
     "package:watch": "pnpm run package -- --watch",
     "clean": "rm -rf dist lib coverage .tsbuildinfo",
     "docs": "typedoc src/main.ts src/lib/*.ts --out docs/api --theme default --name 'conditional-paths-action API'",
     "docs:serve": "pnpm run docs && cd docs/api && python3 -m http.server 8080",
-    "sbom": "node scripts/generate-sbom.js",
     "license-check": "license-checker --onlyAllow 'MIT;ISC;BSD-2-Clause;BSD-3-Clause;Apache-2.0;UNLICENSED' --excludePrivatePackages",
     "security-audit": "pnpm audit --audit-level moderate",
     "deps:update": "pnpm update --latest",
@@ -83,9 +82,9 @@
     "license-checker": "^25.0.1",
     "prettier": "^3.6.2",
     "typedoc": "^0.28.12",
-    "typescript": "^5.6.3",
+    "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0",
     "vitest": "^3.2.4",
-    "zod": "^3.24.1"
+    "zod": "^4.1.5"
   }
 }

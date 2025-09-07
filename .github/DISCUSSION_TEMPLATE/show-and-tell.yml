@@ -1,0 +1,142 @@
+labels: ['showcase', 'community']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🎉 Show and Tell
+
+        Share your awesome implementations, creative use cases, or success stories with conditional-paths-action!
+
+        **Perfect for:**
+        - Innovative workflow configurations
+        - Performance improvements you've achieved
+        - Complex monorepo setups
+        - Integration with other tools
+        - Lessons learned and tips
+
+  - type: input
+    id: title
+    attributes:
+      label: '🎯 Project/Use Case Title'
+      description: 'Give your showcase a catchy title'
+      placeholder: 'How we reduced CI time by 70% in our monorepo'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: '📂 Category'
+      description: 'What type of showcase is this?'
+      options:
+        - '🏢 Enterprise/Large Scale'
+        - '🚀 Performance Optimization'
+        - '🔧 Creative Configuration'
+        - '🔗 Tool Integration'
+        - '📚 Tutorial/Guide'
+        - '🎨 Innovative Use Case'
+        - '💡 Problem Solving'
+        - '🏆 Success Story'
+        - 'Other'
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: '📝 Description'
+      description: 'Tell us about your project, challenge, or implementation'
+      placeholder: 'We have a monorepo with 15 microservices and were struggling with...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: '⚙️ Configuration/Implementation'
+      description: 'Share your configuration, workflow setup, or code snippets'
+      placeholder: |
+        ```yaml
+        - uses: santosr2/conditional-paths-action@v1
+          id: changes
+          with:
+            filters: |
+              services:
+                - 'services/*/src/**'
+                - 'shared/libs/**'
+        ```
+      render: yaml
+
+  - type: textarea
+    id: results
+    attributes:
+      label: '📊 Results & Impact'
+      description: 'What were the outcomes? Include metrics if possible.'
+      placeholder: |
+        - Reduced CI time from 45 minutes to 15 minutes
+        - Decreased resource usage by 60%
+        - Improved developer experience significantly
+        - Cost savings of $X per month
+
+  - type: textarea
+    id: challenges
+    attributes:
+      label: '🧩 Challenges & Solutions'
+      description: 'What problems did you encounter and how did you solve them?'
+      placeholder: 'Initially struggled with complex filter patterns, but discovered...'
+
+  - type: textarea
+    id: tips
+    attributes:
+      label: '💡 Tips & Lessons Learned'
+      description: 'What advice would you give to others trying something similar?'
+      placeholder: |
+        - Start with simple filters and gradually increase complexity
+        - Use the list-files output for debugging
+        - Consider using every vs some quantifiers carefully
+
+  - type: input
+    id: repo
+    attributes:
+      label: '🔗 Repository/Demo Link'
+      description: 'Link to your repository, demo, or relevant resources (optional)'
+      placeholder: 'https://github.com/yourorg/yourproject'
+
+  - type: dropdown
+    id: scale
+    attributes:
+      label: '📏 Project Scale'
+      description: "What's the scale of your project?"
+      options:
+        - 'Personal/Small project (1-5 developers)'
+        - 'Team project (6-20 developers)'
+        - 'Company project (21-100 developers)'
+        - 'Large enterprise (100+ developers)'
+        - 'Open source project'
+        - 'Prefer not to say'
+
+  - type: checkboxes
+    id: sharing
+    attributes:
+      label: '🤝 Community Sharing'
+      description: 'How would you like to contribute back to the community?'
+      options:
+        - label: "I'm happy to answer questions about this implementation"
+        - label: "I'd be willing to create a detailed tutorial"
+        - label: 'This could be added to the examples repository'
+        - label: "I'm open to presenting this in community calls/videos"
+
+  - type: textarea
+    id: metrics
+    attributes:
+      label: '📈 Additional Metrics (Optional)'
+      description:
+        'Any additional performance metrics, before/after comparisons, or quantifiable benefits'
+      placeholder: |
+        Before:
+        - Build time: 45 min
+        - Resource usage: $50/month
+
+        After:
+        - Build time: 15 min
+        - Resource usage: $20/month

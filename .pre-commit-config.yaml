@@ -55,15 +55,6 @@ repos:
         files: ^package\.json$
         pass_filenames: false
 
-      - id: sbom-validation
-        name: SBOM validation
-        entry:
-          sh -c 'if [ -f dist/sbom.json ]; then echo "SBOM exists and is valid"; else echo "SBOM
-          missing - run pnpm run package first"; exit 1; fi'
-        language: system
-        files: ^(src/|package\.json|pnpm-lock\.yaml)
-        pass_filenames: false
-
       - id: security-audit
         name: Security audit
         entry: pnpm run security-audit

@@ -1,0 +1,94 @@
+labels: ['announcement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📢 Project Announcements
+
+        Share important updates, releases, breaking changes, or project news.
+
+        **For maintainers:** Use this template to keep the community informed about:
+        - New releases and features
+        - Breaking changes and migration guides
+        - Project roadmap updates
+        - Community milestones
+        - Security updates
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: '📋 Announcement Type'
+      description: 'What type of announcement is this?'
+      options:
+        - '🚀 New Release'
+        - '⚠️ Breaking Change'
+        - '🛡️ Security Update'
+        - '📍 Roadmap Update'
+        - '🎉 Milestone/Achievement'
+        - '📚 Documentation Update'
+        - '🔧 Infrastructure Change'
+        - '💬 Community Update'
+        - 'Other'
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: '📝 Summary'
+      description: 'Brief overview of the announcement'
+      placeholder: 'conditional-paths-action v2.0.0 is now available with...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: '📋 Details'
+      description: 'Detailed information about this announcement'
+      placeholder: |
+        ## What's New
+        - New feature X allows you to...
+        - Performance improvements of up to 50%
+
+        ## Breaking Changes
+        - Configuration format has changed...
+
+        ## Migration Guide
+        To upgrade from v1.x...
+      render: markdown
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: '🎯 User Impact'
+      description: 'How does this affect users? What actions should they take?'
+      placeholder: 'Users should upgrade to v2.0.0 by updating their workflows...'
+
+  - type: input
+    id: version
+    attributes:
+      label: '🏷️ Version/Tag'
+      description: 'Related version, tag, or milestone (if applicable)'
+      placeholder: 'v2.0.0'
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: '🔗 Resources & Links'
+      description: 'Relevant links, documentation, or resources'
+      placeholder: |
+        - [Release Notes](https://github.com/santosr2/conditional-paths-action/releases/tag/v2.0.0)
+        - [Migration Guide](https://github.com/santosr2/conditional-paths-action/blob/main/MIGRATION.md)
+        - [Updated Documentation](https://santosr2.github.io/conditional-paths-action/docs/)
+
+  - type: checkboxes
+    id: urgency
+    attributes:
+      label: '⚡ Urgency'
+      description: 'How urgent is this announcement?'
+      options:
+        - label: '🚨 Critical - Immediate action required'
+        - label: '⚠️ Important - Action recommended soon'
+        - label: '📝 Informational - Good to know'
+        - label: '🎉 Celebratory - No action required'

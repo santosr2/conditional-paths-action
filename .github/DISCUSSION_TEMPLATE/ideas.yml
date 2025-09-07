@@ -1,0 +1,99 @@
+labels: ['enhancement', 'idea']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💡 Feature Ideas & Enhancement Requests
+
+        Propose new features, improvements, or enhancements for conditional-paths-action.
+
+        **Before submitting:**
+        - Check if a similar idea already exists
+        - Consider if this fits the project's scope
+        - Think about backward compatibility
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: '🎯 Feature Summary'
+      description: 'Brief description of your idea'
+      placeholder: 'Add support for excluding patterns from filters...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: '❗ Problem Statement'
+      description: 'What problem does this solve? What use case does it address?'
+      placeholder: "Currently, users can't easily exclude specific files from broad patterns..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: '💡 Proposed Solution'
+      description: 'How would you like this feature to work? Include examples if possible.'
+      placeholder: |
+        ```yaml
+        filters: |
+          frontend:
+            - 'apps/frontend/**'
+            - '!apps/frontend/**/*.test.ts'
+        ```
+      render: yaml
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: '🔄 Alternative Solutions'
+      description: 'Are there other ways to solve this problem? What have you considered?'
+      placeholder: 'I considered using multiple filters, but that becomes complex...'
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: '📊 Expected Impact'
+      description: 'How many users do you think would benefit from this?'
+      options:
+        - 'High - Most users would benefit'
+        - 'Medium - Many users in specific scenarios'
+        - 'Low - Niche use case but valuable'
+        - 'Unsure'
+    validations:
+      required: false
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: '🔧 Implementation Complexity'
+      description: 'How complex do you think this feature would be to implement?'
+      options:
+        - 'Low - Simple configuration change'
+        - 'Medium - New logic but straightforward'
+        - 'High - Significant changes required'
+        - 'Unsure'
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: '🤝 Contribution'
+      description: 'Are you interested in helping implement this?'
+      options:
+        - label: "I'd be willing to contribute code"
+        - label: "I'd be willing to help with testing"
+        - label: "I'd be willing to help with documentation"
+        - label: 'I can provide detailed requirements'
+
+  - type: checkboxes
+    id: breaking
+    attributes:
+      label: '⚠️ Breaking Changes'
+      description: 'Could this feature introduce breaking changes?'
+      options:
+        - label: 'This would be backward compatible'
+        - label: 'This might introduce breaking changes'
+        - label: 'Unsure about backward compatibility'

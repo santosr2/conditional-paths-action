@@ -89,6 +89,110 @@ outputs:
     description: Number of changed documentation files
   docs_files:
     description: List of changed documentation files (if list-files is enabled)
+  # Additional common filter examples for monorepo usage
+  webapp:
+    description: Boolean indicating if webapp files were changed
+  webapp_count:
+    description: Number of changed webapp files
+  webapp_files:
+    description: List of changed webapp files (if list-files is enabled)
+  mobile:
+    description: Boolean indicating if mobile files were changed
+  mobile_count:
+    description: Number of changed mobile files
+  mobile_files:
+    description: List of changed mobile files (if list-files is enabled)
+  admin:
+    description: Boolean indicating if admin files were changed
+  admin_count:
+    description: Number of changed admin files
+  admin_files:
+    description: List of changed admin files (if list-files is enabled)
+  components:
+    description: Boolean indicating if component files were changed
+  components_count:
+    description: Number of changed component files
+  components_files:
+    description: List of changed component files (if list-files is enabled)
+  utils:
+    description: Boolean indicating if utils files were changed
+  utils_count:
+    description: Number of changed utils files
+  utils_files:
+    description: List of changed utils files (if list-files is enabled)
+  client:
+    description: Boolean indicating if client files were changed
+  client_count:
+    description: Number of changed client files
+  client_files:
+    description: List of changed client files (if list-files is enabled)
+  backend:
+    description: Boolean indicating if backend files were changed
+  backend_count:
+    description: Number of changed backend files
+  backend_files:
+    description: List of changed backend files (if list-files is enabled)
+  database:
+    description: Boolean indicating if database files were changed
+  database_count:
+    description: Number of changed database files
+  database_files:
+    description: List of changed database files (if list-files is enabled)
+  shared:
+    description: Boolean indicating if shared files were changed
+  shared_count:
+    description: Number of changed shared files
+  shared_files:
+    description: List of changed shared files (if list-files is enabled)
+  config:
+    description: Boolean indicating if config files were changed
+  config_count:
+    description: Number of changed config files
+  config_files:
+    description: List of changed config files (if list-files is enabled)
+  # Additional example filter names for advanced patterns
+  features:
+    description: Boolean indicating if feature files were changed
+  features_count:
+    description: Number of changed feature files
+  features_files:
+    description: List of changed feature files (if list-files is enabled)
+  bugfixes:
+    description: Boolean indicating if bugfix files were changed
+  bugfixes_count:
+    description: Number of changed bugfix files
+  bugfixes_files:
+    description: List of changed bugfix files (if list-files is enabled)
+  breaking:
+    description: Boolean indicating if breaking change files were changed
+  breaking_count:
+    description: Number of changed breaking change files
+  breaking_files:
+    description: List of changed breaking change files (if list-files is enabled)
+  security:
+    description: Boolean indicating if security files were changed
+  security_count:
+    description: Number of changed security files
+  security_files:
+    description: List of changed security files (if list-files is enabled)
+  performance:
+    description: Boolean indicating if performance files were changed
+  performance_count:
+    description: Number of changed performance files
+  performance_files:
+    description: List of changed performance files (if list-files is enabled)
+  frontend:
+    description: Boolean indicating if frontend files were changed
+  frontend_count:
+    description: Number of changed frontend files
+  frontend_files:
+    description: List of changed frontend files (if list-files is enabled)
+  rebuild:
+    description: Boolean indicating if rebuild-triggering files were changed
+  rebuild_count:
+    description: Number of changed rebuild-triggering files
+  rebuild_files:
+    description: List of changed rebuild-triggering files (if list-files is enabled)
 runs:
   using: 'node24'
   main: 'dist/index.js'

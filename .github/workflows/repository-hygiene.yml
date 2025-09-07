@@ -1,0 +1,329 @@
+name: Repository Hygiene
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - '.github/**'
+      - '*.md'
+      - 'package.json'
+      - 'mise.toml'
+  schedule:
+    # Weekly hygiene check
+    - cron: '0 9 * * MON'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ci-matrix-hygiene:
+    name: Enforce CI Matrix Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Check Node.js workflows have proper matrix
+        id: matrix-check
+        run: |
+          {
+            echo "## 🔍 CI Matrix Hygiene Report"
+            echo ""
+          } >> matrix_report.md
+
+          missing_matrix=()
+          improper_matrix=()
+          compliant_workflows=()
+
+          # Define workflows that should have Node.js 22/24 matrix
+          declare -A nodejs_workflows=(
+            [".github/workflows/ci.yml"]="CI Pipeline"
+            [".github/workflows/codeql.yml"]="CodeQL Security Analysis"
+            [".github/workflows/license.yml"]="License Compliance"
+            [".github/workflows/sbom.yml"]="SBOM Generation"
+            [".github/workflows/performance.yml"]="Performance Benchmarks"
+            [".github/workflows/release.yml"]="Release Automation"
+            [".github/workflows/docs.yml"]="Documentation Generation"
+          )
+
+          for workflow_file in "${!nodejs_workflows[@]}"; do
+            workflow_name="${nodejs_workflows[$workflow_file]}"
+
+            if [[ ! -f "$workflow_file" ]]; then
+              echo "⚠️ Workflow file not found: $workflow_file" >> matrix_report.md
+              continue
+            fi
+
+            # Check if workflow has Node.js operations
+            if grep -q -E "(npm|pnpm|yarn|node)" "$workflow_file"; then
+              # Check for matrix strategy with both Node 22 and 24
+              if grep -q -A 10 "strategy:" "$workflow_file" && \
+                 grep -q -A 10 "matrix:" "$workflow_file" && \
+                 grep -q -E "node-version.*22" "$workflow_file" && \
+                 grep -q -E "node-version.*24" "$workflow_file"; then
+                compliant_workflows+=("$workflow_name")
+                echo "✅ **$workflow_name** - Proper Node.js 22/24 matrix" >> matrix_report.md
+              else
+                if grep -q -A 10 "matrix:" "$workflow_file"; then
+                  improper_matrix+=("$workflow_name")
+                  echo "⚠️ **$workflow_name** - Has matrix but missing Node.js 22/24" >> matrix_report.md
+                else
+                  missing_matrix+=("$workflow_name")
+                  echo "❌ **$workflow_name** - Missing matrix strategy entirely" >> matrix_report.md
+                fi
+              fi
+            else
+              echo "ℹ️ **$workflow_name** - No Node.js operations (matrix not required)" >> matrix_report.md
+            fi
+          done
+
+          {
+            echo ""
+            echo "### 📊 Summary"
+            echo "- ✅ Compliant workflows: ${#compliant_workflows[@]}"
+            echo "- ⚠️ Improper matrix: ${#improper_matrix[@]}"
+            echo "- ❌ Missing matrix: ${#missing_matrix[@]}"
+          } >> matrix_report.md
+
+          # Set output for failure conditions
+          if [[ ${#missing_matrix[@]} -gt 0 || ${#improper_matrix[@]} -gt 0 ]]; then
+            echo "matrix_compliant=false" >> "$GITHUB_OUTPUT"
+            {
+              echo ""
+              echo "### 🚨 Action Required"
+              if [[ ${#missing_matrix[@]} -gt 0 ]]; then
+                echo "**Missing Matrix Strategy:**"
+                printf -- "- %s\n" "${missing_matrix[@]}"
+              fi
+              if [[ ${#improper_matrix[@]} -gt 0 ]]; then
+                echo "**Improper Matrix Configuration:**"
+                printf -- "- %s\n" "${improper_matrix[@]}"
+              fi
+              echo ""
+              echo "**Required Matrix Format:**"
+              echo '```yaml'
+              echo 'strategy:'
+              echo '  fail-fast: false'
+              echo '  matrix:'
+              echo '    node-version: [22, 24]'
+              echo '```'
+            } >> matrix_report.md
+          else
+            echo "matrix_compliant=true" >> "$GITHUB_OUTPUT"
+            {
+              echo ""
+              echo "🎉 **All workflows are compliant!** Node.js 22/24 matrix properly configured."
+            } >> matrix_report.md
+          fi
+
+      - name: Display Matrix Hygiene Report
+        run: |
+          echo "# CI Matrix Hygiene Report" >> "$GITHUB_STEP_SUMMARY"
+          cat matrix_report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if matrix hygiene violations found
+        if: steps.matrix-check.outputs.matrix_compliant == 'false'
+        run: |
+          echo "❌ CI Matrix hygiene violations detected!"
+          echo "All Node.js workflows must have proper Node.js 22/24 matrix strategy."
+          cat matrix_report.md
+          exit 1
+
+  issues-vs-discussions-hygiene:
+    name: Enforce Issues vs Discussions Separation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Check for forbidden issue templates
+        id: template-check
+        run: |
+          echo "## 🚫 Issue Template Hygiene Report" >> template_report.md
+          echo "" >> template_report.md
+
+          forbidden_templates=()
+
+          # Check for forbidden templates
+          if [[ -f ".github/ISSUE_TEMPLATE/feature_request.yml" ]]; then
+            forbidden_templates+=("feature_request.yml")
+          fi
+
+          if [[ -f ".github/ISSUE_TEMPLATE/enhancement.yml" ]]; then
+            forbidden_templates+=("enhancement.yml")
+          fi
+
+          if [[ -f ".github/ISSUE_TEMPLATE/question.yml" ]]; then
+            forbidden_templates+=("question.yml")
+          fi
+
+          if [[ -f ".github/ISSUE_TEMPLATE/help.yml" ]]; then
+            forbidden_templates+=("help.yml")
+          fi
+
+          if [[ ${#forbidden_templates[@]} -eq 0 ]]; then
+            echo "✅ **No forbidden issue templates found**" >> template_report.md
+            echo "template_compliant=true" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "❌ **Forbidden issue templates detected:**"
+              printf -- "- %s\n" "${forbidden_templates[@]}"
+              echo ""
+              echo "**📋 Policy:**"
+              echo "- ✅ **Bug reports** → GitHub Issues"
+              echo "- ✅ **Feature requests** → GitHub Discussions (Ideas category)"
+              echo "- ✅ **Questions** → GitHub Discussions (Q&A category)"
+              echo ""
+              echo "**🔧 Required Actions:**"
+              echo "1. Remove forbidden issue templates"
+              echo "2. Update .github/ISSUE_TEMPLATE/config.yml to redirect to Discussions"
+              echo "3. Keep only bug_report.yml in issue templates"
+            } >> template_report.md
+            echo "template_compliant=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Check Discussion templates exist
+          {
+            echo ""
+            echo "### 💬 Discussion Templates Status"
+          } >> template_report.md
+          required_discussions=("q-a.yml" "ideas.yml" "announcements.yml" "show-and-tell.yml")
+          missing_discussions=()
+
+          for template in "${required_discussions[@]}"; do
+            if [[ -f ".github/DISCUSSION_TEMPLATE/$template" ]]; then
+              echo "✅ $template exists" >> template_report.md
+            else
+              missing_discussions+=("$template")
+              echo "❌ $template missing" >> template_report.md
+            fi
+          done
+
+          if [[ ${#missing_discussions[@]} -gt 0 ]]; then
+            echo "discussions_compliant=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "discussions_compliant=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Display Issues vs Discussions Report
+        run: |
+          echo "# Issues vs Discussions Hygiene Report" >> "$GITHUB_STEP_SUMMARY"
+          cat template_report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if template hygiene violations found
+        if:
+          steps.template-check.outputs.template_compliant == 'false' ||
+          steps.template-check.outputs.discussions_compliant == 'false'
+        run: |
+          echo "❌ Issues vs Discussions hygiene violations detected!"
+          echo "Feature requests and questions must use GitHub Discussions, not Issues."
+          cat template_report.md
+          exit 1
+
+  repository-structure-hygiene:
+    name: Repository Structure Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Check repository structure
+        id: structure-check
+        run: |
+          echo "## 📁 Repository Structure Report" >> structure_report.md
+          echo "" >> structure_report.md
+
+          violations=()
+
+          # Check for single lockfile
+          lockfiles=$(find . -maxdepth 1 -name "*.lock*" -o -name "yarn.lock" -o -name "package-lock.json" | grep -v node_modules || true)
+          if [[ -n "$lockfiles" && $(echo "$lockfiles" | grep -c -v pnpm-lock.yaml) -gt 0 ]]; then
+            violations+=("Multiple lockfiles found")
+            echo "❌ **Multiple lockfiles detected:**" >> structure_report.md
+            echo "$lockfiles" | while read -r file; do
+              if [[ "$file" != "./pnpm-lock.yaml" ]]; then
+                echo "  - $file (should be removed)" >> structure_report.md
+              fi
+            done
+          else
+            echo "✅ **Single lockfile (pnpm-lock.yaml) confirmed**" >> structure_report.md
+          fi
+
+          # Check required files exist
+          required_files=("LICENSE" "README.md" "package.json" "action.yml" "mise.toml" ".gitignore" ".gitattributes")
+          for file in "${required_files[@]}"; do
+            if [[ -f "$file" ]]; then
+              echo "✅ $file exists" >> structure_report.md
+            else
+              violations+=("Missing required file: $file")
+              echo "❌ $file missing" >> structure_report.md
+            fi
+          done
+
+          # Check directory structure
+          required_dirs=("src" "dist" ".github")
+          for dir in "${required_dirs[@]}"; do
+            if [[ -d "$dir" ]]; then
+              echo "✅ $dir/ directory exists" >> structure_report.md
+            else
+              violations+=("Missing required directory: $dir")
+              echo "❌ $dir/ directory missing" >> structure_report.md
+            fi
+          done
+
+          echo "" >> structure_report.md
+          if [[ ${#violations[@]} -eq 0 ]]; then
+            echo "🎉 **Repository structure is compliant!**" >> structure_report.md
+            echo "structure_compliant=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "🚨 **Structure violations found:** ${#violations[@]}" >> structure_report.md
+            echo "structure_compliant=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Display Structure Report
+        run: |
+          echo "# Repository Structure Report" >> "$GITHUB_STEP_SUMMARY"
+          cat structure_report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create hygiene issue if violations found
+        if: steps.structure-check.outputs.structure_compliant == 'false'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('structure_report.md', 'utf8');
+
+            const title = '🧹 Repository Structure Hygiene Violations';
+            const body = `# Repository Structure Hygiene Report
+
+            This issue was automatically created because repository structure violations were detected.
+
+            ${report}
+
+            ## 🔧 Actions Required
+
+            Please review and fix the violations listed above to maintain repository hygiene standards.
+
+            ---
+            *This issue was automatically generated by repository-hygiene.yml workflow*`;
+
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['repository-hygiene'],
+              state: 'open'
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['repository-hygiene', 'automated', 'high-priority']
+              });
+            }

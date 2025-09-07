@@ -1,6 +1,6 @@
-# Conditional Paths Action
-
 <div align="center">
+
+# Conditional Paths Action
 
 <!-- Core Functionality -->
 [![GitHub release](https://img.shields.io/github/v/release/santosr2/conditional-paths-action?style=flat-square&logo=github)](https://github.com/santosr2/conditional-paths-action/releases/latest)

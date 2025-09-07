@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Create Release PR or Release
         id: release
-        uses: googleapis/release-please-action@cc61a07e2da466bebbc19b3a7dd01d6aecb20d1e # v4.1.0
+        uses: googleapis/release-please-action@c2a5a2bd6a758a0937f1ddb1e8950609867ed15c # v4.3.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
@@ -75,28 +75,37 @@ jobs:
     name: Build Release Artifacts
     runs-on: ubuntu-latest
     needs: validate-tag
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
 
       - name: Setup mise
-        uses: jdx/mise-action@f8dfbcc150159126838e44b882bf34bd98fd90f3 # v2.1.0
+        uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
         with:
           install: true
           cache: true
 
+      - name: Override Node.js version for matrix testing
+        run: |
+          echo "node ${{ matrix.node-version }}" > .mise.toml.local
+          mise install
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run full test suite
+      - name: Run full test suite (Node ${{ matrix.node-version }})
         run: |
           pnpm run check
           pnpm run lint --max-warnings=0
           pnpm run test:coverage
 
-      - name: Build and package
+      - name: Build and package (Node ${{ matrix.node-version }})
         run: |
           pnpm run build
           pnpm run package
@@ -109,10 +118,10 @@ jobs:
             exit 1
           fi
 
-      - name: Upload release artifacts
+      - name: Upload release artifacts (Node ${{ matrix.node-version }})
         uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
-          name: release-artifacts-${{ github.sha }}
+          name: release-artifacts-node${{ matrix.node-version }}-${{ github.sha }}
           path: |
             dist/
             lib/
@@ -128,14 +137,27 @@ jobs:
     needs: [validate-tag, build]
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
 
-      - name: Download release artifacts
+      - name: Download release artifacts (Node 22)
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          name: release-artifacts-${{ github.sha }}
+          name: release-artifacts-node22-${{ github.sha }}
+          path: release-node22
+
+      - name: Download release artifacts (Node 24)
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: release-artifacts-node24-${{ github.sha }}
+          path: release-node24
+
+      - name: Select primary release artifacts (Node 24)
+        run: |
+          # Use Node 24 build as primary release artifacts
+          cp -r release-node24/* .
+          echo "Using Node 24 build as primary release artifacts"
 
       - name: Generate enhanced changelog and release notes
         id: release-notes
@@ -249,7 +271,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
@@ -267,7 +289,7 @@ jobs:
     if: needs.validate-tag.outputs.is-prerelease == 'false'
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
@@ -292,15 +314,15 @@ jobs:
     needs: [validate-tag, create-release]
     steps:
       - name: Checkout action repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@abefc31eafcfbdf6c5336127c1346fdae79ff41c # v5.0.0
+      - name: Download build artifacts (Node 24)
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          name: release-artifacts-${{ github.sha }}
+          name: release-artifacts-node24-${{ github.sha }}
 
       - name: Checkout test repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           repository: actions/checkout
           path: test-repo
