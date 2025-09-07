@@ -179,7 +179,7 @@ jobs:
 
       - name: Create SBOM attestation
         if: github.event_name == 'release' || github.ref == 'refs/heads/main'
-        uses: actions/attest-build-provenance@1c608d11d69870c2092266b3f9a6f3abbf17002c # v1.7.12
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v1.7.12
         with:
           subject-path: 'sbom-node${{ matrix.node-version }}.json'
 
