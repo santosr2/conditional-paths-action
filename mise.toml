@@ -7,6 +7,8 @@
 node = "22"
 # pnpm version matching packageManager field
 pnpm = "10.15.1"
+# Go for license header tooling
+go = "1.21.13"
 # Security scanning tools
 gitleaks = "8.28.0"
 # Pre-commit hooks
@@ -46,6 +48,9 @@ format = "pnpm run format"
 # DevSecOps tasks
 security = "gitleaks detect --source . --verbose"
 license-check = "pnpm run license-check"
+license-eye-install = "go install github.com/apache/skywalking-eyes/cmd/license-eye@latest"
+license-headers-fix = "license-eye header fix"
+license-headers-check = "license-eye header check"
 vuln-scan = "pnpm audit --audit-level high"
 
 # Documentation tasks

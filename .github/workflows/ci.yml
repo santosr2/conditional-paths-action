@@ -107,24 +107,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check license headers in source files
-        run: |
-          echo "Checking for MIT license headers in TypeScript source files..."
-          missing_headers=()
-          while IFS= read -r -d '' file; do
-            if ! head -5 "$file" | grep -q "MIT License\|SPDX-License-Identifier: MIT"; then
-              missing_headers+=("$file")
-            fi
-          done < <(find src/ -name "*.ts" -type f -print0)
-
-          if [ ${#missing_headers[@]} -ne 0 ]; then
-            echo "::warning::The following files are missing license headers:"
-            printf '%s\n' "${missing_headers[@]}"
-            echo "::notice::License headers will be auto-added in future commits"
-          else
-            echo "All source files have proper license headers"
-          fi
-
       - name: Validate dependency licenses
         run: pnpm run license-check
 

@@ -62,6 +62,14 @@ repos:
         files: ^(package\.json|pnpm-lock\.yaml)$
         pass_filenames: false
 
+      - id: license-headers
+        name: License header compliance (skywalking-eyes)
+        entry: bash -c 'mise run license-eye-install && mise run license-headers-fix'
+        language: system
+        files: ^src/.*\.ts$
+        pass_filenames: false
+        require_serial: true
+
   # - repo: https://github.com/rhysd/actionlint
   - repo: https://github.com/salmanmkc/actionlint
     rev: node
