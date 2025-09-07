@@ -41,12 +41,12 @@ jobs:
           # Allow scope to be optional
           requireScope: false
           # Disable validation of the subject's case
-          subjectPattern: ^[A-Z].+[^.]$
+          subjectPattern: ^[a-z].+[^.]$
           # Disable validation of the subject's case
           subjectPatternError: |
             The subject "{subject}" found in the pull request title "{title}"
             didn't match the configured pattern. Please ensure that the subject
-            starts with an uppercase character and doesn't end with a period.
+            starts with a lowercase character and doesn't end with a period.
           # GitHub releases don't support scopes
           githubBaseUrl: https://api.github.com
           # Ignore merge commits
