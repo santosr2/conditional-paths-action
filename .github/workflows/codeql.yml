@@ -28,10 +28,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - language: javascript-typescript
+          - language: javascript
             build-mode: none
             node-version: 22
-          - language: javascript-typescript
+          - language: typescript
+            build-mode: none
+            node-version: 22
+          - language: javascript
+            build-mode: none
+            node-version: 24
+          - language: typescript
             build-mode: none
             node-version: 24
 

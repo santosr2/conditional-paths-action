@@ -15,12 +15,30 @@ import * as os from 'os'
 function createTempRepo(): string {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'action-test-'))
 
-  // Initialize git repo
-  execSync('git init', { cwd: tempDir })
+  try {
+    // Try modern git with explicit default branch
+    execSync('git init --initial-branch=main', { cwd: tempDir })
+  } catch (error) {
+    // Fallback for older git versions
+    execSync('git init', { cwd: tempDir })
+    // Rename default branch to main if it's not already
+    try {
+      const currentBranch = execSync('git branch --show-current', {
+        cwd: tempDir,
+        encoding: 'utf-8'
+      }).trim()
+      if (currentBranch !== 'main' && currentBranch !== '') {
+        execSync(`git branch -m ${currentBranch} main`, { cwd: tempDir })
+      }
+    } catch {
+      // If no current branch (empty repo), we'll create main branch with first commit
+    }
+  }
+
   execSync('git config user.email "test@example.com"', { cwd: tempDir })
   execSync('git config user.name "Test User"', { cwd: tempDir })
 
-  // Create initial commit
+  // Create initial commit on main branch
   fs.writeFileSync(path.join(tempDir, 'README.md'), '# Test Repo')
   execSync('git add .', { cwd: tempDir })
   execSync('git commit -m "Initial commit"', { cwd: tempDir })
