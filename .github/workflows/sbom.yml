@@ -87,8 +87,7 @@ jobs:
             --output-file sbom-node${{ matrix.node-version }}.json \
             --spec-version 1.4 \
             --flatten-components true \
-            --short-PURLs false \
-            --exclude-types dev
+            --short-PURLs false
 
           # Validate SBOM format
           if ! jq empty sbom-node${{ matrix.node-version }}.json; then
