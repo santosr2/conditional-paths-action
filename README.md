@@ -276,7 +276,7 @@ Performance metrics and benchmarks are continuously monitored and available at *
 
 ### 🎯 Key Metrics
 
-- **Bundle Size**: 668KB optimized for GitHub Actions runtime
+- **Bundle Size**: 672KB optimized for GitHub Actions runtime
 - **Cold Start**: ~117K operations/sec for rapid sequential operations
 - **Filter Processing**: 46K+ operations/sec for complex pattern matching
 - **Memory Usage**: <50MB peak for typical monorepo workloads

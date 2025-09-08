@@ -11,11 +11,19 @@
         { "type": "docs", "section": "📚 Documentation", "hidden": false },
         { "type": "deps", "section": "📦 Dependencies", "hidden": false },
         { "type": "ci", "section": "🔄 CI/CD", "hidden": false },
-        { "type": "refactor", "section": "♻️ Refactoring", "hidden": true },
-        { "type": "test", "section": "🧪 Testing", "hidden": true },
-        { "type": "chore", "section": "🔧 Maintenance", "hidden": true }
+        { "type": "refactor", "section": "♻️ Refactoring", "hidden": false },
+        { "type": "test", "section": "🧪 Testing", "hidden": false },
+        { "type": "chore", "section": "🔧 Maintenance", "hidden": false },
+        { "type": "build", "section": "🏗️ Build System", "hidden": false },
+        { "type": "style", "section": "💄 Style", "hidden": true },
+        { "type": "revert", "section": "⏪ Reverts", "hidden": false }
       ],
-      "extra-files": ["action.yml", "dist/index.js", "dist/index.js.map", "dist/sbom.json"]
+      "extra-files": ["action.yml", "dist/index.js", "dist/index.js.map", "dist/sbom.json"],
+      "include-component-in-tag": false,
+      "include-v-in-tag": true,
+      "prerelease": false,
+      "draft": false,
+      "changelog-notes-type": "github"
     }
   }
 }

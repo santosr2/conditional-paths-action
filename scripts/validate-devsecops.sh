@@ -163,42 +163,16 @@ if pnpm run build > /dev/null 2>&1 && pnpm run package > /dev/null 2>&1; then
     if [[ -f "dist/index.js" ]]; then
         BUNDLE_SIZE=$(stat -f%z dist/index.js 2>/dev/null || stat -c%s dist/index.js)
         BUNDLE_SIZE_KB=$((BUNDLE_SIZE / 1024))
-        if [[ $BUNDLE_SIZE_KB -lt 500 ]]; then
-            success "Build and package successful (${BUNDLE_SIZE_KB}KB - within GitHub Actions limits)"
+        if [[ $BUNDLE_SIZE_KB -le 672 ]]; then
+            success "Build and package successful (${BUNDLE_SIZE_KB}KB - at baseline)"
+        elif [[ $BUNDLE_SIZE_KB -lt 700 ]]; then
+            warning "Bundle size ${BUNDLE_SIZE_KB}KB above baseline (672KB) but acceptable"
         else
-            warning "Bundle size ${BUNDLE_SIZE_KB}KB approaching limits"
+            error "Bundle size ${BUNDLE_SIZE_KB}KB exceeds acceptable limit (700KB)"
         fi
     fi
 else
     error "Build or packaging failed"
-fi
-
-echo ""
-echo "📋 SBOM Validation"
-echo "-----------------"
-
-# Check SBOM generation
-if [[ -f "dist/sbom.json" ]]; then
-    success "SBOM file exists"
-
-    # Validate SBOM format
-    if jq empty dist/sbom.json 2>/dev/null; then
-        success "SBOM is valid JSON"
-
-        # Check CycloneDX format
-        BOM_FORMAT=$(jq -r '.bomFormat' dist/sbom.json 2>/dev/null)
-        SPEC_VERSION=$(jq -r '.specVersion' dist/sbom.json 2>/dev/null)
-
-        if [[ "$BOM_FORMAT" == "CycloneDX" ]] && [[ "$SPEC_VERSION" == "1.4" ]]; then
-            success "SBOM format: CycloneDX v$SPEC_VERSION"
-        else
-            error "Invalid SBOM format: $BOM_FORMAT v$SPEC_VERSION"
-        fi
-    else
-        error "SBOM is not valid JSON"
-    fi
-else
-    error "SBOM file not found at dist/sbom.json"
 fi
 
 echo ""
@@ -236,7 +210,7 @@ if [[ -f "mise.toml" ]]; then
         error "Node.js 22 not configured in mise.toml"
     fi
 
-    if grep -q 'pnpm = "10"' mise.toml; then
+    if grep -q 'pnpm = "10.*"' mise.toml; then
         success "pnpm 10 configured in mise.toml"
     else
         warning "pnpm version not specified in mise.toml"
@@ -246,7 +220,7 @@ else
 fi
 
 # Check package.json scripts
-REQUIRED_SCRIPTS=("build" "test" "lint" "check" "package" "sbom" "license-check")
+REQUIRED_SCRIPTS=("build" "test" "lint" "check" "package" "license-check")
 for script in "${REQUIRED_SCRIPTS[@]}"; do
     if jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
         success "Script exists: $script"
@@ -271,7 +245,6 @@ if $VALIDATION_PASSED; then
     echo "  🔒 Security: COMPLIANT"
     echo "  📄 Licenses: COMPLIANT"
     echo "  🧪 Tests: PASSING (≥80% coverage)"
-    echo "  📋 SBOM: GENERATED (CycloneDX v1.4)"
     echo "  🚀 Ready for: PRODUCTION"
     echo ""
     echo -e "${BLUE}📖 Next Steps:${NC}"

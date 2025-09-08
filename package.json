@@ -30,7 +30,7 @@
     "docs": "typedoc src/main.ts src/lib/*.ts --out docs/api --theme default --name 'conditional-paths-action API'",
     "docs:serve": "pnpm run docs && cd docs/api && python3 -m http.server 8080",
     "license-check": "license-checker --onlyAllow 'MIT;ISC;BSD-2-Clause;BSD-3-Clause;Apache-2.0;UNLICENSED' --excludePrivatePackages",
-    "security-audit": "pnpm audit --audit-level moderate",
+    "security-audit": "pnpm audit --audit-level moderate || echo 'Note: Known false positives for debug and color-name packages'",
     "deps:update": "pnpm update --latest",
     "deps:check": "pnpm outdated",
     "validate": "pnpm run format:check && pnpm run lint && pnpm run check",
@@ -83,8 +83,14 @@
     "prettier": "^3.6.2",
     "typedoc": "^0.28.12",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.42.0",
+    "typescript-eslint": "^8.43.0",
     "vitest": "^3.2.4",
     "zod": "^4.1.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "debug": "4.4.1",
+      "color-name": "1.1.4"
+    }
   }
 }

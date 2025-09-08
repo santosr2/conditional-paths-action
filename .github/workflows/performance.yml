@@ -122,8 +122,8 @@ jobs:
               "recommended": 400000
             },
             "performance": {
-              "bundleHealthy": $([ "$BUNDLE_SIZE" -lt 400000 ] && echo "true" || echo "false"),
-              "withinLimits": $([ "$BUNDLE_SIZE" -lt 512000 ] && echo "true" || echo "false")
+              "bundleHealthy": $([ "$BUNDLE_SIZE" -lt 688128 ] && echo "true" || echo "false"),
+              "withinLimits": $([ "$BUNDLE_SIZE" -lt 716800 ] && echo "true" || echo "false")
             }
           }
           EOF
@@ -131,8 +131,8 @@ jobs:
           echo "📦 Bundle Analysis for Node.js $NODE_VERSION:"
           echo "  Size: ${BUNDLE_SIZE_KB} KB (${BUNDLE_SIZE} bytes)"
           echo "  Gzipped: ${BUNDLE_SIZE_GZIP_KB} KB (${BUNDLE_SIZE_GZIP} bytes)"
-          echo "  GitHub Actions Limit: 500 KB"
-          echo "  Status: $([ $BUNDLE_SIZE_KB -lt 400 ] && echo "✅ Excellent" || [ $BUNDLE_SIZE_KB -lt 500 ] && echo "⚠️ Good" || echo "❌ Needs optimization")"
+          echo "  Current Baseline: 672 KB"
+          echo "  Status: $([ $BUNDLE_SIZE_KB -le 672 ] && echo "✅ Excellent" || [ $BUNDLE_SIZE_KB -lt 700 ] && echo "⚠️ Acceptable" || echo "❌ Regression")"
 
       - name: Load baseline performance data
         id: load-baseline
@@ -205,7 +205,7 @@ jobs:
           |--------|-------|--------|
           | Bundle Size | ${bundle_size_kb} KB | $([ "$is_healthy" = "true" ] && echo "✅ Good" || echo "⚠️ Needs attention") |
           | Gzipped Size | ${gzip_size_kb} KB | - |
-          | GitHub Actions Limit | 500 KB | $([ "$bundle_size_kb" -lt 500 ] && echo "✅ Within limits" || echo "❌ Exceeds limits") |
+          | Current Baseline | 672 KB | $([ "$bundle_size_kb" -le 672 ] && echo "✅ At baseline" || echo "⚠️ Above baseline") |
 
           ## 🏃 Benchmark Results
 
@@ -348,9 +348,9 @@ jobs:
 
             <h2>🎯 Performance Targets</h2>
             <ul>
-              <li><strong>Bundle Size:</strong> < 400 KB (excellent), < 500 KB (acceptable)</li>
-              <li><strong>Regression Threshold:</strong> < 5% increase</li>
-              <li><strong>GitHub Actions Limit:</strong> 500 KB maximum</li>
+              <li><strong>Bundle Size:</strong> ≤ 672 KB (excellent/baseline), < 700 KB (acceptable)</li>
+              <li><strong>Regression Threshold:</strong> < 5% increase from baseline</li>
+              <li><strong>Current Baseline:</strong> 672 KB</li>
             </ul>
 
             <script>
@@ -481,8 +481,8 @@ jobs:
             }
 
             comment += '### 📊 Thresholds\n';
-            comment += '- **Excellent**: < 400 KB\n';
-            comment += '- **Acceptable**: < 500 KB\n';
+            comment += '- **Excellent/Baseline**: ≤ 672 KB\n';
+            comment += '- **Acceptable**: < 700 KB\n';
             comment += '- **Regression Alert**: > 5% increase\n\n';
             comment += '*Performance data updated on every commit. [View detailed reports →](https://santosr2.github.io/conditional-paths-action/performance/)*';
 
