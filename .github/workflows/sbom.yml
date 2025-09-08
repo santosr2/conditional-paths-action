@@ -338,16 +338,21 @@ jobs:
                   .sbom-list li { margin: 10px 0; }
                   .sbom-list a { color: #0366d6; text-decoration: none; padding: 10px; display: inline-block; }
                   .sbom-list a:hover { text-decoration: underline; }
+                  .back { margin-bottom: 20px; }
+                  .back a { color: #0366d6; text-decoration: none; }
               </style>
           </head>
           <body>
+              <div class="back">
+                  <a href="../">← Back to Documentation</a>
+              </div>
               <h1>📋 Software Bill of Materials</h1>
               <p>CycloneDX v1.6 format SBOMs for conditional-paths-action</p>
               <ul class="sbom-list">
-                  <li>📦 <a href="sbom.json">Latest SBOM (Node.js 24)</a></li>
-                  <li>📦 <a href="sbom-node22.json">SBOM for Node.js 22</a></li>
-                  <li>📦 <a href="sbom-node24.json">SBOM for Node.js 24</a></li>
-                  <li>📊 <a href="sbom-comparison-report.md">Comparison Report</a></li>
+                  <li>📦 <a href="./sbom.json">Latest SBOM (Node.js 24)</a></li>
+                  <li>📦 <a href="./sbom-node22.json">SBOM for Node.js 22</a></li>
+                  <li>📦 <a href="./sbom-node24.json">SBOM for Node.js 24</a></li>
+                  <li>📊 <a href="./sbom-comparison-report.md">Comparison Report</a></li>
               </ul>
               <hr>
               <p><em>Generated: <script>document.write(new Date().toISOString())</script></em></p>

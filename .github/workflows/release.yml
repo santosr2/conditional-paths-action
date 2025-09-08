@@ -25,6 +25,7 @@ jobs:
       tag-name: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
       major-version: ${{ steps.release.outputs.major }}
+      pr-number: ${{ steps.release.outputs.pr }}
     steps:
       - name: Create Release PR or Release
         id: release
@@ -32,6 +33,96 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
+          config-file: release-please-config.json
+
+  enhance-release-pr:
+    name: Enhance Release PR with Authors
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: needs.release-please.outputs.pr-number != ''
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Enhance PR body with commit authors
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ needs.release-please.outputs.pr-number }}"
+          echo "Enhancing PR #$PR_NUMBER with author information"
+
+          # Get the current PR body
+          PR_BODY=$(gh pr view "$PR_NUMBER" --json body -q .body)
+
+          # Get the last release tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "")
+
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            echo "Found previous tag: $PREVIOUS_TAG"
+
+            # Generate author credits section
+            AUTHOR_CREDITS=""
+            AUTHOR_CREDITS="${AUTHOR_CREDITS}"$'\n\n'"## 👥 Contributors"$'\n\n'
+
+            # Get unique contributors since last release
+            CONTRIBUTORS=$(git log "$PREVIOUS_TAG..HEAD" --format='%an' --no-merges | sort -u)
+
+            while IFS= read -r contributor; do
+              AUTHOR_CREDITS="${AUTHOR_CREDITS}• **${contributor}**"$'\n'
+            done <<< "$CONTRIBUTORS"
+
+            # Add commit details with authors
+            AUTHOR_CREDITS="${AUTHOR_CREDITS}"$'\n'"## 📝 Commits by Author"$'\n\n'
+
+            # Group commits by type with authors
+            for type in feat fix docs perf deps ci refactor test chore build; do
+              case $type in
+                feat) section="### Features" ;;
+                fix) section="### Bug Fixes" ;;
+                docs) section="### Documentation" ;;
+                perf) section="### Performance" ;;
+                deps) section="### Dependencies" ;;
+                ci) section="### CI/CD" ;;
+                refactor) section="### Refactoring" ;;
+                test) section="### Testing" ;;
+                chore) section="### Maintenance" ;;
+                build) section="### Build System" ;;
+              esac
+
+              # Filter commits for this type - simplified pattern to avoid shellcheck issues
+              COMMITS=""
+              while IFS= read -r line; do
+                if echo "$line" | grep -q "^${type}"; then
+                  # Remove type prefix and add bullet point
+                  cleaned="• ${line#"${type}"*: }"
+                  COMMITS="${COMMITS}${cleaned}"$'\n'
+                fi
+              done < <(git log "$PREVIOUS_TAG..HEAD" --pretty=format:"%s (@%an)" --no-merges)
+
+              if [[ -n "$COMMITS" ]]; then
+                AUTHOR_CREDITS="${AUTHOR_CREDITS}${section}"$'\n'"${COMMITS}"
+              fi
+            done
+
+            # Update PR body with author information
+            NEW_BODY="${PR_BODY}"$'\n\n'"---"$'\n'"${AUTHOR_CREDITS}"
+
+            # Escape the body for gh pr edit
+            echo "$NEW_BODY" > /tmp/pr_body.txt
+            gh pr edit "$PR_NUMBER" --body-file /tmp/pr_body.txt
+
+            echo "PR #$PR_NUMBER has been enhanced with author information"
+          else
+            echo "No previous release tag found, skipping author enhancement"
+          fi
 
   validate-tag:
     name: Validate Release Tag
@@ -144,6 +235,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Download release artifacts (Node 22)
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
@@ -175,6 +267,15 @@ jobs:
 
           printf "Generating changelog from %s to %s\n" "$PREVIOUS_TAG" "$CURRENT_TAG"
 
+          # Debug: Show available tags and commits
+          echo "Available tags:"
+          git tag --sort=-version:refname | head -5
+
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            echo "Commits between $PREVIOUS_TAG and $CURRENT_TAG:"
+            git log "$PREVIOUS_TAG..$CURRENT_TAG" --oneline --no-merges | head -10
+          fi
+
           # Generate conventional changelog
           if [[ -n "$PREVIOUS_TAG" ]]; then
             conventional-changelog -p conventionalcommits -r 2 > temp_changelog.md
@@ -189,33 +290,96 @@ jobs:
 
           # Extract changes from conventional changelog
           if [[ -n "$PREVIOUS_TAG" ]]; then
-            # Parse git log for conventional commits and categorize
+            # Parse git log for conventional commits and categorize with authors
             {
               echo "### ✨ Features"
-              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^feat(\(.+\))?:" | sed 's/^feat\(([^)]*)\)\?:\s*/* /' || echo "No new features"
+              FEATURES=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s (@%an)" --no-merges | { grep -E "^feat(\\([^)]+\\))?:" || true; } | sed -E 's/^feat(\\([^)]+\\))?:\\s*/- /')
+              if [[ -n "$FEATURES" ]]; then
+                echo "$FEATURES"
+              else
+                echo "- No new features in this release"
+              fi
               echo ""
+
               echo "### 🐛 Bug Fixes"
-              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^fix(\(.+\))?:" | sed 's/^fix\(([^)]*)\)\?:\s*/* /' || echo "No bug fixes"
+              FIXES=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s (@%an)" --no-merges | { grep -E "^fix(\\([^)]+\\))?:" || true; } | sed -E 's/^fix(\\([^)]+\\))?:\\s*/- /')
+              if [[ -n "$FIXES" ]]; then
+                echo "$FIXES"
+              else
+                echo "- No bug fixes in this release"
+              fi
               echo ""
+
               echo "### 📚 Documentation"
-              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^docs(\(.+\))?:" | sed 's/^docs\(([^)]*)\)\?:\s*/* /' || echo "No documentation changes"
+              DOCS=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s (@%an)" --no-merges | { grep -E "^docs(\\([^)]+\\))?:" || true; } | sed -E 's/^docs(\\([^)]+\\))?:\\s*/- /')
+              if [[ -n "$DOCS" ]]; then
+                echo "$DOCS"
+              else
+                echo "- No documentation changes in this release"
+              fi
               echo ""
+
               echo "### ⚡ Performance"
-              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^perf(\(.+\))?:" | sed 's/^perf\(([^)]*)\)\?:\s*/* /' || echo "No performance improvements"
+              PERF=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s (@%an)" --no-merges | { grep -E "^perf(\\([^)]+\\))?:" || true; } | sed -E 's/^perf(\\([^)]+\\))?:\\s*/- /')
+              if [[ -n "$PERF" ]]; then
+                echo "$PERF"
+              else
+                echo "- No performance improvements in this release"
+              fi
               echo ""
+
               echo "### 🔧 Maintenance"
-              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s" --no-merges | grep -E "^(chore|ci|build|refactor)(\(.+\))?:" | sed 's/^[^:]*:\s*/* /' || echo "No maintenance changes"
+              MAINT=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%s (@%an)" --no-merges | { grep -E "^(chore|ci|build|refactor)(\\([^)]+\\))?:" || true; } | sed -E 's/^[^:]+:\\s*/- /')
+              if [[ -n "$MAINT" ]]; then
+                echo "$MAINT"
+              else
+                echo "- No maintenance changes in this release"
+              fi
               echo ""
             } >> release_notes.md
 
             # Add commit count and contributors
             COMMIT_COUNT=$(git rev-list --count "$PREVIOUS_TAG..$CURRENT_TAG")
-            CONTRIBUTORS=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --format='%an' --no-merges | sort -u | wc -l | tr -d ' ')
+            CONTRIBUTOR_LIST=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --format='%an' --no-merges | sort -u)
+            CONTRIBUTOR_COUNT=$(echo "$CONTRIBUTOR_LIST" | wc -l | tr -d ' ')
 
             {
               echo "### 📊 Release Statistics"
               echo "- **$COMMIT_COUNT** commits since $PREVIOUS_TAG"
-              echo "- **$CONTRIBUTORS** contributor(s) to this release"
+              echo "- **$CONTRIBUTOR_COUNT** contributor(s) to this release"
+              echo ""
+              echo "### 👥 Contributors"
+              echo "Thanks to the following contributors for this release:"
+              echo ""
+              while IFS= read -r contributor; do
+                # Try to extract GitHub username from git config or use name as-is
+                # Common patterns: "Name", "username", "Name (username)"
+                if echo "$contributor" | grep -q '(.*)'; then
+                  # Extract username from parentheses if present
+                  # Extract username using parameter expansion
+                  temp="${contributor#*(}"
+                  username="${temp%)}"
+                  echo "- [@$username](https://github.com/$username) ($contributor)"
+                else
+                  # Use the name as-is, attempting to link it
+                  echo "- **$contributor**"
+                fi
+              done <<< "$CONTRIBUTOR_LIST"
+              echo ""
+              echo "### 📝 Full Changelog"
+              echo "<details>"
+              echo "<summary>View all commits</summary>"
+              echo ""
+              echo "| Commit | Author | Message |"
+              echo "|--------|--------|---------|"
+              # Use a while loop to properly escape commit messages
+              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:"%h|%an|%s" --no-merges | while IFS='|' read -r hash author message; do
+                # Escape pipe characters in the message
+                escaped_message="${message//|/\\|}"
+                echo "| [\`$hash\`](https://github.com/${{ github.repository }}/commit/$hash) | **$author** | $escaped_message |"
+              done
+              echo ""
+              echo "</details>"
               echo ""
             } >> release_notes.md
           else
@@ -300,6 +464,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Update major version tag
         run: |
           major_tag="${{ needs.validate-tag.outputs.major-version }}"
@@ -307,8 +476,13 @@ jobs:
 
           echo "Updating $major_tag to point to $current_tag"
 
-          # Delete the major tag if it exists
-          git push origin --delete "$major_tag" || true
+          # Check if the major tag exists remotely
+          if git ls-remote --tags origin | grep -q "refs/tags/$major_tag"; then
+            echo "Tag $major_tag exists remotely, deleting it first"
+            git push origin --delete "$major_tag"
+          else
+            echo "Tag $major_tag does not exist remotely, will create it"
+          fi
 
           # Create new major tag pointing to current release
           git tag -fa "$major_tag" -m "Update $major_tag to $current_tag"
@@ -332,6 +506,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           repository: actions/checkout
+          ref: main
           path: test-repo
 
       - name: Test released action
