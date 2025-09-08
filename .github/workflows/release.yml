@@ -105,7 +105,7 @@ jobs:
                   cleaned="• ${line#"${type}"*: }"
                   COMMITS="${COMMITS}${cleaned}"$'\n'
                 fi
-              done < <(git log "$PREVIOUS_TAG..HEAD" --pretty=format:"%s (@%an)" --no-merges)
+              done < <(git log "$PREVIOUS_TAG..HEAD" --pretty=format:"%s (%an)" --no-merges)
 
               if [[ -n "$COMMITS" ]]; then
                 AUTHOR_CREDITS="${AUTHOR_CREDITS}${section}"$'\n'"${COMMITS}"
