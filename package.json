@@ -78,7 +78,7 @@
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.1.1",
     "license-checker": "^25.0.1",
     "prettier": "^3.6.2",
     "typedoc": "^0.28.12",
