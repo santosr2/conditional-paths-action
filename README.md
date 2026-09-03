@@ -1,3 +1,6 @@
+> [!WARN]
+> Retired, as the original project has returned to maintenance.
+
 <div align="center">
 
 # Conditional Paths Action
