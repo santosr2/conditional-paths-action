@@ -1,6 +1,6 @@
 {
   "name": "conditional-paths-action",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Execute your workflow steps only if relevant files are modified.",
   "main": "dist/index.js",
