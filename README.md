@@ -1,4 +1,4 @@
-> [!WARN]
+> [!WARNING]
 > Retired, as the original project has returned to maintenance.
 
 <div align="center">
